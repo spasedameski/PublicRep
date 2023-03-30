@@ -1,0 +1,1782 @@
+
+@EndUserText.label: 'G/L Account Line Item'
+
+@AbapCatalog: { sqlViewName: 'Z_GLACC',
+                compiler.compareFilter: true,
+                preserveKey: true,
+                buffering.status: #NOT_ALLOWED }
+
+@VDM.viewType: #BASIC
+@AccessControl.authorizationCheck: #CHECK
+@ObjectModel: { representativeKey: 'LedgerGLLineItem',
+                usageType.sizeCategory: #XXL,
+                usageType.dataClass:  #TRANSACTIONAL,
+                usageType.serviceQuality: #B,
+                supportedCapabilities: [ #EXTRACTION_DATA_SOURCE ],
+                modelingPattern: #NONE }
+@Analytics: {
+      dataCategory: #CUBE,
+      internalName: #LOCAL,
+      dataExtraction: {
+        enabled: true,
+        delta.changeDataCapture: {
+          mapping:
+            [
+              {
+                table: 'ACDOCA',
+                role: #MAIN,
+                viewElement: ['SourceLedger', 'CompanyCode', 'FiscalYear', 'AccountingDocument', 'LedgerGLLineItem'],
+                tableElement: ['rldnr', 'rbukrs', 'gjahr', 'belnr', 'docln']
+              }
+            ]
+         }
+      }
+    }
+
+
+@ClientHandling.algorithm: #SESSION_VARIABLE
+
+@AccessControl.personalData.blocking: #('TRANSACTIONAL_DATA')
+@Metadata.ignorePropagatedAnnotations: true
+@Metadata.allowExtensions:true
+//@AccessControl.privilegedAssociations: ['_User' ]
+
+define view I_GLAccountLineItemRawData
+  as select from P_ACDOCA
+
+  /* *************************************************************
+   *  association zur ID
+   * *************************************************************
+  */
+
+  association [1..1] to I_JournalEntry                 as _JournalEntry                  on  $projection.CompanyCode        = _JournalEntry.CompanyCode
+                                                                                         and $projection.FiscalYear         = _JournalEntry.FiscalYear
+                                                                                         and $projection.AccountingDocument = _JournalEntry.AccountingDocument
+  association [1..1] to I_CompanyCode                  as _CompanyCode                   on  $projection.CompanyCode = _CompanyCode.CompanyCode
+
+  association [1..1] to I_FiscalYearVariant            as _FiscalYearVariant             on  $projection.FiscalYearVariant = _FiscalYearVariant.FiscalYearVariant
+  association [0..1] to I_FiscalYearForCompanyCode     as _FiscalYear                    on  $projection.FiscalYear  = _FiscalYear.FiscalYear
+                                                                                         and $projection.CompanyCode = _FiscalYear.CompanyCode
+  association [0..1] to I_FiscalYearForVariant         as _LedgerFiscalYearForVariant    on  $projection.LedgerFiscalYear  = _LedgerFiscalYearForVariant.FiscalYear
+                                                                                         and $projection.FiscalYearVariant = _LedgerFiscalYearForVariant.FiscalYearVariant
+  association [0..1] to I_FiscalPeriodForVariant       as _FiscalPeriodForVariant        on  $projection.LedgerFiscalYear  = _FiscalPeriodForVariant.FiscalYear
+                                                                                         and $projection.FiscalPeriod      = _FiscalPeriodForVariant.FiscalPeriod
+                                                                                         and $projection.FiscalYearVariant = _FiscalPeriodForVariant.FiscalYearVariant
+  association [0..1] to I_FiscalYearPeriodForVariant   as _FiscalYearPeriodForVariant    on  $projection.FiscalYearPeriod  = _FiscalYearPeriodForVariant.FiscalYearPeriod
+                                                                                         and $projection.FiscalYearVariant = _FiscalYearPeriodForVariant.FiscalYearVariant
+
+  association [0..1] to I_CalendarDate                 as _CalendarDate                  on  $projection.PostingDate = _CalendarDate.CalendarDate
+  association [0..1] to I_FiscalCalendarDate           as _FiscalCalendarDate            on  $projection.PostingDate       = _FiscalCalendarDate.CalendarDate
+                                                                                         and $projection.FiscalYearVariant = _FiscalCalendarDate.FiscalYearVariant
+  association [0..1] to I_ControllingArea              as _ControllingArea               on  $projection.ControllingArea = _ControllingArea.ControllingArea
+
+  association [0..1] to I_Currency                     as _BalanceTransactionCurrency    on  $projection.BalanceTransactionCurrency = _BalanceTransactionCurrency.Currency
+  association [0..1] to I_Currency                     as _TransactionCurrency           on  $projection.TransactionCurrency = _TransactionCurrency.Currency
+  association [1..1] to I_Currency                     as _CompanyCodeCurrency           on  $projection.CompanyCodeCurrency = _CompanyCodeCurrency.Currency
+
+  association [0..1] to I_Currency                     as _GlobalCurrency                on  $projection.GlobalCurrency = _GlobalCurrency.Currency
+  association [0..1] to I_Currency                     as _FunctionalCurrency            on  $projection.FunctionalCurrency = _FunctionalCurrency.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency1          on  $projection.FreeDefinedCurrency1 = _FreeDefinedCurrency1.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency2          on  $projection.FreeDefinedCurrency2 = _FreeDefinedCurrency2.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency3          on  $projection.FreeDefinedCurrency3 = _FreeDefinedCurrency3.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency4          on  $projection.FreeDefinedCurrency4 = _FreeDefinedCurrency4.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency5          on  $projection.FreeDefinedCurrency5 = _FreeDefinedCurrency5.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency6          on  $projection.FreeDefinedCurrency6 = _FreeDefinedCurrency6.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency7          on  $projection.FreeDefinedCurrency7 = _FreeDefinedCurrency7.Currency
+  association [0..1] to I_Currency                     as _FreeDefinedCurrency8          on  $projection.FreeDefinedCurrency8 = _FreeDefinedCurrency8.Currency
+
+  association [0..1] to I_UnitOfMeasure                as _BaseUnit                      on  $projection.BaseUnit = _BaseUnit.UnitOfMeasure
+  association [0..1] to I_UnitOfMeasure                as _CostSourceUnit                on  $projection.CostSourceUnit = _CostSourceUnit.UnitOfMeasure
+  association [0..1] to I_UnitOfMeasure                as _AdditionalQuantity1Unit       on  $projection.AdditionalQuantity1Unit = _AdditionalQuantity1Unit.UnitOfMeasure
+  association [0..1] to I_UnitOfMeasure                as _AdditionalQuantity2Unit       on  $projection.AdditionalQuantity2Unit = _AdditionalQuantity2Unit.UnitOfMeasure
+  association [0..1] to I_UnitOfMeasure                as _AdditionalQuantity3Unit       on  $projection.AdditionalQuantity3Unit = _AdditionalQuantity3Unit.UnitOfMeasure
+  association [0..1] to I_UnitOfMeasure                as _ReferenceQuantityUnit         on  $projection.ReferenceQuantityUnit   = _ReferenceQuantityUnit.UnitOfMeasure
+
+  association [0..1] to I_Segment                      as _Segment                       on  $projection.Segment = _Segment.Segment
+
+  association [0..*] to I_ProfitCenter                 as _ProfitCenter                  on  $projection.ControllingArea = _ProfitCenter.ControllingArea
+                                                                                         and $projection.ProfitCenter    = _ProfitCenter.ProfitCenter
+  association [0..*] to I_CostCenter                   as _CostCenter                    on  $projection.ControllingArea = _CostCenter.ControllingArea
+                                                                                         and $projection.CostCenter      = _CostCenter.CostCenter
+  association [0..1] to I_BusinessArea                 as _BusinessArea                  on  $projection.BusinessArea = _BusinessArea.BusinessArea
+  association [0..1] to I_FunctionalArea               as _FunctionalArea                on  $projection.FunctionalArea = _FunctionalArea.FunctionalArea
+
+  association [0..1] to I_GLAccountInChartOfAccounts   as _GLAccountInChartOfAccounts    on  $projection.ChartOfAccounts = _GLAccountInChartOfAccounts.ChartOfAccounts
+                                                                                         and $projection.GLAccount       = _GLAccountInChartOfAccounts.GLAccount
+  association [0..1] to I_GLAccountInCompanyCode       as _GLAccountInCompanyCode        on  $projection.CompanyCode = _GLAccountInCompanyCode.CompanyCode
+                                                                                         and $projection.GLAccount   = _GLAccountInCompanyCode.GLAccount
+  association [0..1] to I_ChartOfAccounts              as _ChartOfAccounts               on  $projection.ChartOfAccounts = _ChartOfAccounts.ChartOfAccounts
+
+  association [0..1] to I_AccountingDocumentType       as _AccountingDocumentType        on  $projection.AccountingDocumentType = _AccountingDocumentType.AccountingDocumentType
+  association [0..1] to I_FinancialAccountType         as _FinancialAccountType          on  $projection.FinancialAccountType = _FinancialAccountType.FinancialAccountType
+  association [0..1] to I_DebitCreditCode              as _DebitCreditCode               on  $projection.DebitCreditCode = _DebitCreditCode.DebitCreditCode
+
+  association [0..1] to I_Product                      as _Product                       on  $projection.Product = _Product.Product
+  association [0..1] to I_Plant                        as _Plant                         on  $projection.Plant = _Plant.Plant
+
+  association [1..1] to I_Ledger                       as _Ledger                        on  $projection.SourceLedger = _Ledger.Ledger
+
+  association [0..1] to I_Customer                     as _Customer                      on  $projection.Customer = _Customer.Customer
+  association [0..1] to I_CustomerCompany              as _CustomerCompany               on  $projection.Customer    = _CustomerCompany.Customer
+                                                                                         and $projection.CompanyCode = _CustomerCompany.CompanyCode   
+  association [0..1] to I_CustomerGroup                as _CustomerGroup                 on  $projection.CustomerGroup = _CustomerGroup.CustomerGroup
+
+  association [0..1] to I_Supplier                     as _Supplier                      on  $projection.Supplier = _Supplier.Supplier
+  association [0..1] to I_SupplierCompany              as _SupplierCompany               on  $projection.Supplier    = _SupplierCompany.Supplier
+                                                                                         and $projection.CompanyCode = _SupplierCompany.CompanyCode 
+
+  association [0..1] to I_ProductGroup                 as _ProductGroup                  on  $projection.ProductGroup = _ProductGroup.MaterialGroup
+  association [0..1] to I_ProductGroup_2               as _ProductGroup_2                on  $projection.ProductGroup = _ProductGroup_2.ProductGroup
+  association [0..1] to I_ProductGroup                 as _SoldProductGroup              on  $projection.SoldProductGroup = _SoldProductGroup.MaterialGroup
+  association [0..1] to I_ProductGroup_2               as _SoldProductGroup_2            on  $projection.SoldProductGroup = _SoldProductGroup_2.ProductGroup
+
+  //  association [0..1] to I_SalesOrder                   as _SalesOrder                    on  $projection.SalesOrder = _SalesOrder.SalesOrder
+  //  association [0..1] to I_SalesOrderItem               as _SalesOrderItem                on  $projection.SalesOrder     = _SalesOrderItem.SalesOrder
+  //                                                                                         and $projection.SalesOrderItem = _SalesOrderItem.SalesOrderItem
+  association [0..1] to I_SalesDocument                as _SalesDocument                 on  $projection.SalesDocument = _SalesDocument.SalesDocument
+  association [0..1] to I_SalesDocumentItem            as _SalesDocumentItem             on  $projection.SalesDocument     = _SalesDocumentItem.SalesDocument
+                                                                                         and $projection.SalesDocumentItem = _SalesDocumentItem.SalesDocumentItem
+
+  association [0..1] to I_Order                        as _Order                         on  $projection.OrderID = _Order.OrderID
+  association [0..1] to I_Order                        as _OriginOrder                   on  $projection.OriginOrder  = _OriginOrder.OrderID
+  association [0..*] to I_CostAnalysisResource         as _CostAnalysisResource          on  $projection.ControllingArea      = _CostAnalysisResource.ControllingArea
+                                                                                         and $projection.CostAnalysisResource = _CostAnalysisResource.CostAnalysisResource
+
+  association [0..1] to I_FinancialTransactionType     as _FinancialTransactionType      on  $projection.FinancialTransactionType = _FinancialTransactionType.FinancialTransactionType
+  
+  association [0..1] to I_BusinessTransactionCategory  as _BusinessTransactionCategory   on  $projection.BusinessTransactionCategory = _BusinessTransactionCategory.BusinessTransactionCategory  
+  association [0..1] to I_BusinessTransactionType      as _BusinessTransactionType       on  $projection.BusinessTransactionType     = _BusinessTransactionType.BusinessTransactionType
+  //  association [0..1] to I_ControllingBusTransacType    as _ControllingBusTransacType     on  $projection.ControllingBusTransacType = _ControllingBusTransacType.BusinessTransactionType
+
+  association [0..1] to I_ReferenceDocumentType        as _ReferenceDocumentType         on  $projection.ReferenceDocumentType = _ReferenceDocumentType.ReferenceDocumentType
+
+  association [0..*] to I_CostCenter                   as _PartnerCostCenter             on  $projection.ControllingArea   = _PartnerCostCenter.ControllingArea
+                                                                                         and $projection.PartnerCostCenter = _PartnerCostCenter.CostCenter
+  association [0..*] to I_ProfitCenter                 as _PartnerProfitCenter           on  $projection.ControllingArea     = _PartnerProfitCenter.ControllingArea
+                                                                                         and $projection.PartnerProfitCenter = _PartnerProfitCenter.ProfitCenter
+  association [0..1] to I_BusinessArea                 as _PartnerBusinessArea           on  $projection.PartnerBusinessArea = _PartnerBusinessArea.BusinessArea
+  association [0..1] to I_FunctionalArea               as _PartnerFunctionalArea         on  $projection.PartnerFunctionalArea = _PartnerFunctionalArea.FunctionalArea
+  association [0..1] to I_CompanyCode                  as _PartnerCompanyCode            on  $projection.PartnerCompanyCode = _PartnerCompanyCode.CompanyCode
+  association [0..1] to I_Segment                      as _PartnerSegment                on  $projection.PartnerSegment = _PartnerSegment.Segment
+
+  association [0..1] to I_AccountingDocumentCategory   as _AccountingDocumentCategory    on  $projection.AccountingDocumentCategory = _AccountingDocumentCategory.AccountingDocumentCategory
+
+  association [0..1] to I_PostingKey                   as _PostingKey                    on  $projection.PostingKey = _PostingKey.PostingKey
+
+  association [0..1] to I_SubLedgerAccLineItemType     as _SubLedgerAccLineItemType      on  $projection.SubLedgerAcctLineItemType = _SubLedgerAccLineItemType.SubLedgerAcctLineItemType
+  association [0..1] to I_User                         as _User                          on  $projection.AccountingDocCreatedByUser = _User.UserID
+
+  association [0..*] to I_ProfitCenter                 as _EliminationProfitCenter       on  $projection.ControllingArea         = _EliminationProfitCenter.ControllingArea
+                                                                                         and $projection.EliminationProfitCenter = _EliminationProfitCenter.ProfitCenter
+
+  association [0..1] to I_GLAccountType                as _GLAccountType                 on  $projection.GLAccountType = _GLAccountType.GLAccountType
+  association [0..1] to I_FinancialAccountType         as _OffsettingAccountType         on  $projection.OffsettingAccountType = _OffsettingAccountType.FinancialAccountType
+  association [0..1] to I_GLAccountInChartOfAccounts   as _AlternativeGLAccount          on  $projection.CountryChartOfAccounts = _AlternativeGLAccount.ChartOfAccounts
+                                                                                         and $projection.AlternativeGLAccount   = _AlternativeGLAccount.GLAccount
+
+  association [0..1] to I_OffsettingAccount            as _OffsettingAccount             on  $projection.OffsettingChartOfAccounts = _OffsettingAccount.ChartOfAccounts
+                                                                                         and $projection.OffsettingAccountType     = _OffsettingAccount.OffsettingAccountType
+                                                                                         and $projection.OffsettingAccount         = _OffsettingAccount.OffsettingAccount
+
+  association [0..1] to I_ChartOfAccounts              as _OffsettingChartOfAccounts     on  $projection.OffsettingChartOfAccounts = _OffsettingChartOfAccounts.ChartOfAccounts
+  association [0..1] to I_ChartOfAccounts              as _CountryChartOfAccounts        on  $projection.CountryChartOfAccounts = _CountryChartOfAccounts.ChartOfAccounts
+
+//  association [0..1] to I_PurchasingDocument           as _PurchasingDocument            on  $projection.PurchasingDocument = _PurchasingDocument.PurchasingDocument
+//  association [0..1] to I_PurchasingDocumentItem       as _PurchasingDocumentItem        on  $projection.PurchasingDocument     = _PurchasingDocumentItem.PurchasingDocument
+//                                                                                           and $projection.PurchasingDocumentItem = _PurchasingDocumentItem.PurchasingDocumentItem
+  association [0..1] to I_SpecialGLCode                as _SpecialGLCode                 on  $projection.SpecialGLCode        = _SpecialGLCode.SpecialGLCode
+                                                                                         and $projection.FinancialAccountType = _SpecialGLCode.FinancialAccountType
+  association [0..*] to I_TaxCode                      as _TaxCode                       on  $projection.TaxCode = _TaxCode.TaxCode
+  //above solution for association to I_TaxCode not supported. TaxCalculationProcedure required as additional key field to make TaxCode unique
+  //association[0..1] to I_TaxCode                      as _TaxCode                       on $projection.TaxCode = _TaxCode.TaxCode and
+  //                                                                                         $projection._Company_Country.TaxCalculationProcedure = _TaxCode.TaxCalculationProcedure
+  association [0..1] to I_Country                      as _TaxCountry                    on  $projection.TaxCountry = _TaxCountry.Country
+  //  association [0..1] to I_Housebank                    as _HouseBank                     on  $projection.CompanyCode = _HouseBank.CompanyCode
+  //                                                                                         and $projection.HouseBank   = _HouseBank.HouseBank
+
+  association [1..1] to I_AccountingDocument           as _ClearingAccountingDocument    on  $projection.CompanyCode                = _ClearingAccountingDocument.CompanyCode
+                                                                                         and $projection.FiscalYear                 = _ClearingAccountingDocument.FiscalYear
+                                                                                         and $projection.ClearingAccountingDocument = _ClearingAccountingDocument.AccountingDocument
+  association [0..1] to I_MasterFixedAsset             as _MasterFixedAsset              on  $projection.CompanyCode                = _MasterFixedAsset.CompanyCode
+                                                                                         and $projection.MasterFixedAsset           = _MasterFixedAsset.MasterFixedAsset
+  association [0..1] to I_MasterFixedAsset             as _GroupMasterFixedAsset         on  $projection.CompanyCode                = _GroupMasterFixedAsset.CompanyCode
+                                                                                         and $projection.GroupMasterFixedAsset      = _GroupMasterFixedAsset.MasterFixedAsset
+  association [0..1] to I_MasterFixedAsset             as _PartnerMasterFixedAsset       on  $projection.CompanyCode                = _PartnerMasterFixedAsset.CompanyCode
+                                                                                         and $projection.PartnerMasterFixedAsset    = _PartnerMasterFixedAsset.MasterFixedAsset
+  association [0..1] to I_FixedAsset                   as _FixedAsset                    on  $projection.CompanyCode                = _FixedAsset.CompanyCode
+                                                                                         and $projection.MasterFixedAsset           = _FixedAsset.MasterFixedAsset
+                                                                                         and $projection.FixedAsset                 = _FixedAsset.FixedAsset
+  association [0..1] to I_FixedAsset                   as _GroupFixedAsset               on  $projection.CompanyCode                = _GroupFixedAsset.CompanyCode
+                                                                                         and $projection.GroupMasterFixedAsset      = _GroupFixedAsset.MasterFixedAsset
+                                                                                         and $projection.GroupFixedAsset            = _GroupFixedAsset.FixedAsset
+  association [0..1] to I_FixedAsset                   as _PartnerFixedAsset             on  $projection.CompanyCode                = _PartnerFixedAsset.CompanyCode
+                                                                                         and $projection.PartnerMasterFixedAsset    = _PartnerFixedAsset.MasterFixedAsset
+                                                                                         and $projection.PartnerFixedAsset          = _PartnerFixedAsset.FixedAsset
+
+  association [0..1] to I_BusinessProcess              as _BusinessProcess               on  $projection.ControllingArea = _BusinessProcess.ControllingArea
+                                                                                         and $projection.BusinessProcess = _BusinessProcess.BusinessProcess
+
+  association [0..*] to I_CostCenterActivityType       as _PartnerCostCtrActivityType    on  $projection.ControllingArea            = _PartnerCostCtrActivityType.ControllingArea
+                                                                                         and $projection.PartnerCostCtrActivityType = _PartnerCostCtrActivityType.CostCtrActivityType
+  association [0..1] to I_InternalOrder                as _PartnerOrder                  on  $projection.PartnerOrder = _PartnerOrder.InternalOrder
+
+  association [0..1] to I_OrderCategory                as _PartnerOrderCategory          on  $projection.PartnerOrderCategory = _PartnerOrderCategory.OrderCategory
+  association [0..1] to I_SalesDocument                as _PartnerSalesDocument          on  $projection.PartnerSalesDocument = _PartnerSalesDocument.SalesDocument
+  association [0..1] to I_SalesDocumentItem            as _PartnerSalesDocumentItem      on  $projection.PartnerSalesDocument     = _PartnerSalesDocumentItem.SalesDocument
+                                                                                         and $projection.PartnerSalesDocumentItem = _PartnerSalesDocumentItem.SalesDocumentItem
+  association [0..1] to I_BusinessProcess              as _PartnerBusinessProcess        on  $projection.ControllingArea        = _PartnerBusinessProcess.ControllingArea
+                                                                                         and $projection.PartnerBusinessProcess = _PartnerBusinessProcess.BusinessProcess
+  association [0..1] to I_BillingDocumentType          as _BillingDocumentType           on  $projection.BillingDocumentType = _BillingDocumentType.BillingDocumentType
+
+  association [0..1] to I_SalesOrganization            as _SalesOrganization             on  $projection.SalesOrganization = _SalesOrganization.SalesOrganization
+  association [0..1] to I_DistributionChannel          as _DistributionChannel           on  $projection.DistributionChannel = _DistributionChannel.DistributionChannel
+
+  association [0..1] to I_Product                      as _SoldProduct                   on  $projection.SoldProduct = _SoldProduct.Product
+
+  association [0..1] to I_InventoryValuationType       as _InventorySpecialStockValnType on  $projection.InventorySpecialStockValnType = _InventorySpecialStockValnType.InventoryValuationType
+
+  association [0..1] to I_InventorySpecialStockType    as _InventorySpecialStockType     on  $projection.InventorySpecialStockType = _InventorySpecialStockType.InventorySpecialStockType
+
+  association [0..1] to I_SalesDocument                as _InventorySpclStkSalesDocument on  $projection.InventorySpclStkSalesDocument = _InventorySpclStkSalesDocument.SalesDocument
+
+  association [0..1] to I_SalesDocumentItem            as _InventorySpclStkSalesDocItm   on  $projection.InventorySpclStkSalesDocument = _InventorySpclStkSalesDocItm.SalesDocument
+                                                                                         and $projection.InventorySpclStkSalesDocItm   = _InventorySpclStkSalesDocItm.SalesDocumentItem
+
+  association [0..1] to I_WBSElementBasicData          as _InvtrySpclStockWBSElmntBasic  on  $projection.InvtrySpclStockWBSElmntIntID = _InvtrySpclStockWBSElmntBasic.WBSElementInternalID  // do not use
+  association [0..1] to I_WBSElementBasicData          as _InvtrySpclStkWBSElmntBscData  on  $projection.InvtrySpclStockWBSElmntIntID = _InvtrySpclStkWBSElmntBscData.WBSElementInternalID
+
+  association [0..1] to I_Supplier                     as _InventorySpecialStockSupplier on  $projection.InventorySpecialStockSupplier = _InventorySpecialStockSupplier.Supplier
+  association [0..1] to I_Supplier                     as _InvtrySpclStockSupplierText   on  $projection.InventorySpecialStockSupplier = _InvtrySpclStockSupplierText.Supplier
+
+  association [0..1] to I_InventoryValuationType       as _InventoryValuationType        on  $projection.InventoryValuationType = _InventoryValuationType.InventoryValuationType
+
+  association [0..1] to I_ControllingDebitCreditCode   as _ControllingDebitCreditCode    on  $projection.ControllingDebitCreditCode = _ControllingDebitCreditCode.ControllingDebitCreditCode
+  association [0..1] to I_ControllingDebitCreditCode   as _OriginCtrlgDebitCreditCode    on  $projection.OriginCtrlgDebitCreditCode = _OriginCtrlgDebitCreditCode.ControllingDebitCreditCode
+  association [0..1] to I_ControllingObject            as _OriginSenderObject            on  $projection.OriginSenderObject = _OriginSenderObject.ControllingObject
+
+  association [0..1] to I_ControllingObjectClass       as _ControllingObjectClass        on  $projection.ControllingObjectClass = _ControllingObjectClass.ControllingObjectClass
+
+  association [0..1] to I_Partnercompany               as _PartnerCompany                on  $projection.PartnerCompany = _PartnerCompany.PartnerCompany
+
+  association [0..1] to I_ControllingObjectClass       as _PartnerControllingObjectClass on  $projection.PartnerControllingObjectClass = _PartnerControllingObjectClass.ControllingObjectClass
+
+  association [0..*] to I_CostCenter                   as _OriginCostCenter              on  $projection.ControllingArea  = _OriginCostCenter.ControllingArea
+                                                                                         and $projection.OriginCostCenter = _OriginCostCenter.CostCenter
+
+  association [0..*] to I_ProfitCenter                 as _OriginProfitCenter            on  $projection.ControllingArea    = _OriginProfitCenter.ControllingArea
+                                                                                         and $projection.OriginProfitCenter = _OriginProfitCenter.ProfitCenter
+  association [0..*] to I_CostCenterActivityType       as _CostCtrActivityType           on  $projection.ControllingArea     = _CostCtrActivityType.ControllingArea
+                                                                                         and $projection.CostCtrActivityType = _CostCtrActivityType.CostCtrActivityType
+
+  association [0..*] to I_CostCenterActivityType       as _OriginCostCtrActivityType     on  $projection.ControllingArea           = _OriginCostCtrActivityType.ControllingArea
+                                                                                         and $projection.OriginCostCtrActivityType = _OriginCostCtrActivityType.CostCtrActivityType
+
+  association [0..1] to I_OrderCategory                as _OrderCategory                 on  $projection.OrderCategory = _OrderCategory.OrderCategory
+
+  //  association [0..1] to I_MovementCategory             as _MovementCategory              on  $projection.AssetAcctTransClassfctn = _MovementCategory.AssetAcctTransClassfctn
+  //  association [0..1] to I_AssetTransactionType         as _AssetTransactionType          on  $projection.AssetTransactionType = _AssetTransactionType.AssetTransactionType
+
+  association [0..*] to I_CostOriginGroup              as _CostOriginGroup               on  $projection.ControllingArea = _CostOriginGroup.ControllingArea
+                                                                                         and $projection.CostOriginGroup = _CostOriginGroup.CostOriginGroup
+  association [0..1] to I_Country                      as _CustomerSupplierCountry       on  $projection.CustomerSupplierCountry = _CustomerSupplierCountry.Country
+  association [0..1] to I_SalesDistrict                as _SalesDistrict                 on  $projection.SalesDistrict = _SalesDistrict.SalesDistrict
+  association [0..1] to I_Customer                     as _BillToParty                   on  $projection.BillToParty = _BillToParty.Customer
+  association [0..1] to I_Customer                     as _ShipToParty                   on  $projection.ShipToParty = _ShipToParty.Customer
+
+  //  association [0..1] to I_HouseBankAccount             as _HouseBankAccount              on  $projection.CompanyCode      = _HouseBankAccount.CompanyCode
+  //                                                                                         and $projection.HouseBank        = _HouseBankAccount.HouseBank
+  //                                                                                         and $projection.HouseBankAccount = _HouseBankAccount.HouseBankAccount
+  //  association [0..1] to I_LogicalSystem                as _LogicalSystem                 on  $projection.LogicalSystem = _LogicalSystem.LogicalSystem
+  association [0..1] to I_OperatingConcern             as _OperatingConcern              on  $projection.OperatingConcern = _OperatingConcern.OperatingConcern
+  //  association [0..1] to I_ProjectNetwork               as _ProjectNetwork                on  $projection.ProjectNetwork = _ProjectNetwork.ProjectNetwork
+  //  association [0..1] to I_Purreqvaluationarea          as _PurReqValuationArea           on  $projection.ValuationArea = _PurReqValuationArea.ValuationArea
+  association [0..1] to I_WorkCenter                   as _WorkCenter                    on  $projection.WorkCenterInternalID = _WorkCenter.WorkCenterInternalID
+                                                                                         and _WorkCenter.WorkCenterTypeCode   = 'A'
+
+  //  association [0..1] to I_BillableControl              as _BillableControl               on  $projection.BillableControl     = _BillableControl.BillableControl
+
+  association [0..1] to I_ConditionContract            as _ConditionContract             on  $projection.ConditionContract = _ConditionContract.ConditionContract
+
+  association [0..1] to I_MaintenanceOrder             as _MaintenanceOrder              on  $projection.OrderID       = _MaintenanceOrder.MaintenanceOrder
+                                                                                         and $projection.OrderCategory = '30'
+  association [0..1] to I_MaintenanceOrderOperation    as _MaintenanceOrderOperation     on  $projection.OrderID        = _MaintenanceOrderOperation.MaintenanceOrder
+                                                                                         and $projection.OrderOperation = _MaintenanceOrderOperation.MaintenanceOrderOperation
+                                                                                         and $projection.OrderCategory  = '30'
+  association [0..1] to I_MaintenanceOrderSubOperation as _MaintenanceOrderSubOperation  on  $projection.OrderID           = _MaintenanceOrderSubOperation.MaintenanceOrder
+                                                                                         and $projection.OrderOperation    = _MaintenanceOrderSubOperation.MaintenanceOrderOperation
+                                                                                         and $projection.OrderSuboperation = _MaintenanceOrderSubOperation.MaintenanceOrderSubOperation
+
+  association [0..1] to I_Equipment                    as _Equipment                     on  $projection.Equipment = _Equipment.Equipment
+
+  association [0..1] to I_FunctionalLocation           as _FunctionalLocation            on  $projection.FunctionalLocation = _FunctionalLocation.FunctionalLocation
+  association [0..1] to I_Product                      as _Assembly                      on  $projection.Assembly = _Assembly.Product
+  association [0..1] to I_MaintenanceActivityType      as _MaintenanceActivityType       on  $projection.MaintenanceActivityType = _MaintenanceActivityType.MaintenanceActivityType
+  //  association [0..1] to I_MaintOrdPlngDegreeCode      as _MaintOrdPlngDegreeCode       on  $projection.MaintenanceOrderPlanningCode = _MaintOrdPlngDegreeCode.MaintenanceOrderPlanningCode
+  //  association [0..1] to I_PMNotificationPriorityType  as _PMNotificationPriorityType   on  $projection.MaintPriorityType            = _PMNotificationPriorityType.MaintPriorityType
+  //  association [0..1] to I_PMNotificationPriority      as _PMNotificationPriority       on  $projection.MaintPriority                = _PMNotificationPriority.MaintPriority
+  //                                                                                       and $projection.MaintPriorityType            = _PMNotificationPriority.MaintPriorityType
+
+  //  association [0..1] to I_Order                        as _SuperiorOrder                 on  $projection.SuperiorOrder                = _Order.OrderID
+  association [0..1] to I_WorkPackage                  as _WorkPackage                   on  $projection.WorkPackage = _WorkPackage.WorkPackage
+  association [0..1] to I_WorkPackageWorkItem          as _WorkPackageWorkItem           on  $projection.WorkItem    = _WorkPackageWorkItem.WorkItem
+                                                                                         and $projection.WorkPackage = _WorkPackageWorkItem.WorkPackage
+  //  association [0..1] to I_TimeSheetOvertimeCat         as _TimeSheetOvertimeCat          on  $projection.TimeSheetOvertimeCategory = _TimeSheetOvertimeCat.TimeSheetOvertimeCategory
+  association [0..1] to I_ServiceDocumentType          as _ServiceDocumentType           on  $projection.ServiceDocumentType = _ServiceDocumentType.ServiceDocumentType
+
+  association [0..1] to I_SrvcDocByDocumentType        as _ServiceDocument               on  $projection.ServiceDocumentType = _ServiceDocument.ServiceDocumentType
+                                                                                         and $projection.ServiceDocument     = _ServiceDocument.ServiceDocument
+
+  association [0..1] to I_SrvcDocItemByDocumentType    as _ServiceDocumentItem           on  $projection.ServiceDocumentType = _ServiceDocumentItem.ServiceDocumentType
+                                                                                         and $projection.ServiceDocument     = _ServiceDocumentItem.ServiceDocument
+                                                                                         and $projection.ServiceDocumentItem = _ServiceDocumentItem.ServiceDocumentItem
+
+  association [0..1] to I_ServiceDocumentType          as _ServiceContractType           on  $projection.ServiceContractType = _ServiceContractType.ServiceDocumentType
+
+  association [0..1] to I_SrvcDocByDocumentType        as _ServiceContract               on  $projection.ServiceContractType = _ServiceContract.ServiceDocumentType
+                                                                                         and $projection.ServiceContract     = _ServiceContract.ServiceDocument
+
+  association [0..1] to I_SrvcDocItemByDocumentType    as _ServiceContractItem           on  $projection.ServiceContractType = _ServiceContractItem.ServiceDocumentType
+                                                                                         and $projection.ServiceContract     = _ServiceContractItem.ServiceDocument
+                                                                                         and $projection.ServiceContractItem = _ServiceContractItem.ServiceDocumentItem
+
+  association [0..1] to I_ServiceDocumentType          as _PartnerServiceDocumentType    on  $projection.PartnerServiceDocumentType = _PartnerServiceDocumentType.ServiceDocumentType
+
+  association [0..1] to I_SrvcDocByDocumentType        as _PartnerServiceDocument        on  $projection.PartnerServiceDocumentType = _PartnerServiceDocument.ServiceDocumentType
+                                                                                         and $projection.PartnerServiceDocument     = _PartnerServiceDocument.ServiceDocument
+
+  association [0..1] to I_SrvcDocItemByDocumentType    as _PartnerServiceDocumentItem    on  $projection.PartnerServiceDocumentType = _PartnerServiceDocumentItem.ServiceDocumentType
+                                                                                         and $projection.PartnerServiceDocument     = _PartnerServiceDocumentItem.ServiceDocument
+                                                                                         and $projection.PartnerServiceDocumentItem = _PartnerServiceDocumentItem.ServiceDocumentItem
+  association [0..1] to I_ProjectBasicData             as _ProjectBasicData              on  $projection.ProjectInternalID = _ProjectBasicData.ProjectInternalID
+  association [0..1] to I_WBSElementBasicData          as _WBSElementBasicData           on  $projection.WBSElementInternalID = _WBSElementBasicData.WBSElementInternalID
+  association [0..1] to I_ProjectBasicData             as _PartnerProjectBasicData       on  $projection.PartnerProjectInternalID = _PartnerProjectBasicData.ProjectInternalID
+  association [0..1] to I_WBSElementBasicData          as _PartnerWBSElementBasicData    on  $projection.PartnerWBSElementInternalID = _PartnerWBSElementBasicData.WBSElementInternalID
+
+  association [0..1] to I_AccrualObjectType            as _AccrualObjectType             on  $projection.AccrualObjectType = _AccrualObjectType.AccrualObjectType
+
+  association [0..1] to I_AccrualObject                as _AccrualObject                 on  $projection.AccrualObjectType = _AccrualObject.AccrualObjectType
+                                                                                         and _AccrualObject.AccrualObjectLogicalSystem  = ''
+                                                                                         and $projection.CompanyCode       = _AccrualObject.CompanyCode
+                                                                                         and $projection.AccrualObject     = _AccrualObject.AccrualObject
+
+
+  association [0..1] to I_AccrualSubObject             as _AccrualSubobject              on  $projection.AccrualObjectType = _AccrualSubobject.AccrualObjectType
+                                                                                         and _AccrualSubobject.AccrualObjectLogicalSystem  = ''
+                                                                                         and $projection.CompanyCode       = _AccrualSubobject.CompanyCode
+                                                                                         and $projection.AccrualObject     = _AccrualSubobject.AccrualObject
+                                                                                         and $projection.AccrualSubobject  = _AccrualSubobject.AccrualSubobject
+
+  association [0..1] to I_AccrualItemType              as _AccrualItemType               on  $projection.AccrualObjectType = _AccrualItemType.AccrualObjectType
+                                                                                         and $projection.AccrualItemType   = _AccrualItemType.AccrualItemType
+
+  association [0..1] to I_CreditRiskClass              as _CreditRiskClass               on  $projection.CreditRiskClass = _CreditRiskClass.CreditRiskClass
+
+  association [0..1] to I_FinValuationObjectType       as _FinValuationObjectType        on  $projection.FinancialValuationObjectType = _FinValuationObjectType.FinancialValuationObjectType
+
+  association [0..*] to I_SemTagGLAccount              as _SemTagGLAccount               on  $projection.GLAccount       = _SemTagGLAccount.GLAccount
+                                                                                         and $projection.ChartOfAccounts = _SemTagGLAccount.ChartOfAccounts
+
+  // Public Sector (start)
+  association [0..1] to I_CompanyCode                  as _CashLedgerCompanyCode         on  $projection.CashLedgerCompanyCode = _CashLedgerCompanyCode.CompanyCode
+
+  //  association [0..1] to I_GLAccount                  as _CashLedgerAccount        on  $projection.CashLedgerCompanyCode   = _CashLedgerAccount.CompanyCode
+  //                                                                                  and $projection.CashLedgerAccount       = _CashLedgerAccount.GLAccount
+
+  association [0..1] to I_GLAccountInCompanyCode       as _CashLedgerAccount             on  $projection.CashLedgerCompanyCode = _CashLedgerAccount.CompanyCode
+                                                                                         and $projection.CashLedgerAccount     = _CashLedgerAccount.GLAccount
+
+  association [0..1] to I_FinancialManagementArea      as _FinancialManagementArea       on  $projection.FinancialManagementArea = _FinancialManagementArea.FinancialManagementArea
+
+  association [0..*] to I_FundsCenter                  as _FundsCenter                   on  $projection.FinancialManagementArea = _FundsCenter.FinancialManagementArea
+                                                                                         and $projection.FundsCenter             = _FundsCenter.FundsCenter
+
+  association [0..1] to I_FundedProgram                as _FundedProgram                 on  $projection.FinancialManagementArea = _FundedProgram.FinancialManagementArea
+                                                                                         and $projection.FundedProgram           = _FundedProgram.FundedProgram
+
+  association [0..1] to I_Fund                         as _Fund                          on  $projection.FinancialManagementArea = _Fund.FinancialManagementArea
+                                                                                         and $projection.Fund                    = _Fund.Fund
+
+  association [0..1] to I_Grant                        as _Grant                         on  $projection.GrantID                 = _Grant.GrantID
+
+  association [0..1] to I_BudgetPeriod                 as _BudgetPeriod                  on  $projection.BudgetPeriod = _BudgetPeriod.BudgetPeriod
+
+  association [0..1] to I_Fund                         as _PartnerFund                   on  $projection.FinancialManagementArea = _PartnerFund.FinancialManagementArea
+                                                                                         and $projection.PartnerFund             = _PartnerFund.Fund
+
+  association [0..1] to I_Grant                        as _PartnerGrant                  on  $projection.PartnerGrant            = _PartnerGrant.GrantID
+
+  association [0..1] to I_BudgetPeriod                 as _PartnerBudgetPeriod           on  $projection.PartnerBudgetPeriod = _PartnerBudgetPeriod.BudgetPeriod
+
+  association [0..1] to I_CompanyCode                  as _PubSecBudgetAccountCoCode     on  $projection.PubSecBudgetAccountCoCode = _PubSecBudgetAccountCoCode.CompanyCode
+
+  association [0..1] to I_PubSecBudgetAccount          as _PubSecBudgetAccount           on  $projection.PubSecBudgetAccountCoCode = _PubSecBudgetAccount.PubSecBudgetAccountCoCode
+                                                                                         and $projection.PubSecBudgetAccount       = _PubSecBudgetAccount.PubSecBudgetAccount
+                                                                                         
+// not C1 released                                                                                         
+//  association [0..1] to I_SponsoredProgram            as _SponsoredProgram           on  $projection.SponsoredProgram             = _SponsoredProgram.SponsoredProgram  
+//  association [0..1] to I_SponsoredClass              as _SponsoredClass             on  $projection.SponsoredClass               = _SponsoredClass.SponsoredClass                                                                                           
+
+  association [0..1] to I_FiscCalendarDateForCompCode  as _PubSecBudgetCnsmpnDate        on  $projection.PubSecBudgetCnsmpnDate    = _PubSecBudgetCnsmpnDate.CalendarDate
+                                                                                         and $projection.PubSecBudgetAccountCoCode = _PubSecBudgetCnsmpnDate.CompanyCode
+
+  association [0..1] to I_FiscalYearPeriodForCmpnyCode as _PubSecBudgetCnsmpnFsclPeriod  on  $projection.PubSecBudgetAccountCoCode    = _PubSecBudgetCnsmpnFsclPeriod.CompanyCode
+                                                                                         and $projection.PubSecBudgetCnsmpnFsclYear   = _PubSecBudgetCnsmpnFsclPeriod.FiscalYear
+                                                                                         and $projection.PubSecBudgetCnsmpnFsclPeriod = _PubSecBudgetCnsmpnFsclPeriod.FiscalPeriod
+
+  association [0..1] to I_FiscalYearForCompanyCode     as _PubSecBudgetCnsmpnFsclYear    on  $projection.PubSecBudgetAccountCoCode  = _PubSecBudgetCnsmpnFsclYear.CompanyCode
+                                                                                         and $projection.PubSecBudgetCnsmpnFsclYear = _PubSecBudgetCnsmpnFsclYear.FiscalYear
+
+  association [0..1] to I_PubSecBdgtCnsmpnType         as _PubSecBudgetCnsmpnType        on  $projection.PubSecBudgetCnsmpnType = _PubSecBudgetCnsmpnType.PubSecBudgetCnsmpnType
+
+  association [0..1] to I_PubSecBdgtCnsmpnAmtType      as _PubSecBudgetCnsmpnAmtType     on  $projection.PubSecBudgetCnsmpnAmtType = _PubSecBudgetCnsmpnAmtType.PubSecBudgetCnsmpnAmtType
+
+  // Public Sector (end)
+  
+  association [0..1] to I_CnsldtnUnit_3             as _ConsolidationUnit                on  $projection.ConsolidationUnit             = _ConsolidationUnit.ConsolidationUnit      
+  association [0..1] to I_CnsldtnUnit_3             as _PartnerConsolidationUnit         on  $projection.PartnerConsolidationUnit      = _PartnerConsolidationUnit.ConsolidationUnit
+  association [0..1] to I_Globalcompany             as _Company                          on  $projection.Company                       = _Company.Company
+  association [0..1] to I_CnsldtnChartOfAccounts    as _ConsolidationChartOfAccounts     on  $projection.ConsolidationChartOfAccounts  = _ConsolidationChartOfAccounts.ConsolidationChartOfAccounts
+  association [0..1] to I_CnsldtnFinStmntItem       as _CnsldtnFinancialStatementItem    on  $projection.ConsolidationChartOfAccounts  = _CnsldtnFinancialStatementItem.ConsolidationChartOfAccounts
+                                                                                         and $projection.CnsldtnFinancialStatementItem = _CnsldtnFinancialStatementItem.FinancialStatementItem
+  association [0..1] to I_CnsldtnSubItemCategory    as _CnsldtnSubitemCategory           on  $projection.CnsldtnSubitemCategory        = _CnsldtnSubitemCategory.SubItemCategory
+  association [0..1] to I_CnsldtnSubItem            as _CnsldtnSubitem                   on  $projection.CnsldtnSubitemCategory        = _CnsldtnSubitem.SubItemCategory
+                                                                                         and $projection.CnsldtnSubitem                = _CnsldtnSubitem.SubItem  
+
+  association [0..1]  to I_ProviderContract         as _ProviderContract                 on  $projection.ProviderContract     = _ProviderContract.ProviderContract
+  association [0..1]  to I_ProviderContractItem     as _ProviderContractItem             on  $projection.ProviderContract     = _ProviderContractItem.ProviderContract
+                                                                                         and $projection.ProviderContractItem = _ProviderContractItem.ProviderContractItem
+
+  
+  association [1..1] to E_JournalEntryItem             as _Extension                     on  $projection.SourceLedger       = _Extension.SourceLedger
+                                                                                         and $projection.CompanyCode        = _Extension.CompanyCode
+                                                                                         and $projection.FiscalYear         = _Extension.FiscalYear
+                                                                                         and $projection.AccountingDocument = _Extension.AccountingDocument
+                                                                                         and $projection.LedgerGLLineItem   = _Extension.LedgerGLLineItem
+
+{
+      @ObjectModel.foreignKey.association: '_Ledger'
+  key rldnr                                                                                            as SourceLedger,
+      @ObjectModel.foreignKey.association: '_CompanyCode'
+  key rbukrs                                                                                           as CompanyCode,
+      @ObjectModel.foreignKey.association: '_FiscalYear'
+  key gjahr                                                                                            as FiscalYear,
+      @ObjectModel.foreignKey.association: '_JournalEntry'
+  key belnr                                                                                            as AccountingDocument,
+  key docln                                                                                            as LedgerGLLineItem,
+
+      @ObjectModel.foreignKey.association: '_LedgerFiscalYearForVariant'
+      @Semantics.fiscal.year: true
+      ryear                                                                                            as LedgerFiscalYear,
+      rrcty                                                                                            as GLRecordType,
+      DOCNR_LD as JrnlEntrAltvFYConsecutiveID,
+
+      // Test workaround
+      @ObjectModel.foreignKey.association: '_ChartOfAccounts'
+      ktopl                                                                                            as ChartOfAccounts,
+      @ObjectModel.foreignKey.association: '_ControllingArea'
+      kokrs                                                                                            as ControllingArea,
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_00  Unified Journal Entry: Transaction, Currencies, Units
+      ///////////////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_FinancialTransactionType'
+      rmvct                                                                                            as FinancialTransactionType,
+      vorgn                                                                                            as GLBusinessTransactionType,
+@ObjectModel.foreignKey.association: '_BusinessTransactionCategory'
+bttype as BusinessTransactionCategory, 
+@ObjectModel.foreignKey.association: '_BusinessTransactionType'
+cbttype as BusinessTransactionType, 
+closingstep as FinancialClosingStep,     
+      vrgng                                                                                            as ControllingBusTransacType,
+      @ObjectModel.foreignKey.association: '_ReferenceDocumentType'
+      awtyp                                                                                            as ReferenceDocumentType,
+      //      @ObjectModel.foreignKey.association: '_LogicalSystem'
+      awsys                                                                                            as LogicalSystem,
+      aworg                                                                                            as ReferenceDocumentContext,
+      awref                                                                                            as ReferenceDocument,      
+      cast( awitem as fis_awitem preserving type ) as ReferenceDocumentItem,      
+      cast( awitgrp as fis_awitgrp preserving type ) as ReferenceDocumentItemGroup,
+      subta     as TransactionSubitem,
+      xreversing                                                                                       as IsReversal,
+      xreversed                                                                                        as IsReversed,
+      //XTRUEREV,
+      //AWTYP_REV,      
+      cast( aworg_rev as fis_aworg_rev preserving type ) as ReversalReferenceDocumentCntxt,      
+      cast( awref_rev as fis_awref_rev preserving type ) as ReversalReferenceDocument,
+      subta_rev                                                                                        as ReversalTransactionSubitem,
+      xsettling                                                                                        as IsSettlement,
+      xsettled                                                                                         as IsSettled,
+      cast( prec_awtyp as fis_prec_awtyp preserving type ) as PredecessorReferenceDocType,
+      cast( prec_aworg as fis_prec_aworg preserving type ) as PredecessorReferenceDocCntxt,      
+      cast( prec_awref as fis_prec_awref preserving type ) as PredecessorReferenceDocument,
+      cast( prec_awitem as fis_prec_awitem preserving type ) as PredecessorReferenceDocItem,
+      //PREC_SUBTA,
+      cast( prec_bukrs as  fins_prec_bukrs_gfc preserving type )                                       as PrdcssrJournalEntryCompanyCode,
+      cast( prec_gjahr as  fins_prec_gjahr_gfc preserving type )                                       as PrdcssrJournalEntryFiscalYear,
+      cast( prec_belnr as  fins_prec_belnr_gfc preserving type )                                       as PredecessorJournalEntry,
+      cast( prec_docln as  fins_prec_docln_gfc preserving type )                                       as PredecessorJournalEntryItem,
+
+      cast( src_awtyp as fis_src_awtyp preserving type ) as SourceReferenceDocumentType,
+      cast( src_awsys as fis_src_awsys preserving type ) as SourceLogicalSystem,
+      cast( src_aworg as fis_src_aworg preserving type ) as SourceReferenceDocumentCntxt,
+      cast( src_awref as fis_src_awref preserving type ) as SourceReferenceDocument,
+      cast( src_awitem as fis_src_awitem preserving type ) as SourceReferenceDocumentItem,
+      cast( src_awsubit as fis_src_awsubit preserving type ) as SourceReferenceDocSubitem,
+      cast( xcommitment as fis_xcommitment preserving type ) as IsCommitment,
+      obs_reason                                                                                       as JrnlEntryItemObsoleteReason,
+      closing_run_id                                                                                   as JrnlPeriodEndClosingRunLogUUID,
+      orgl_change as OrganizationalChange,
+
+      @ObjectModel.foreignKey.association: '_GLAccountInChartOfAccounts'
+      racct                                                                                            as GLAccount,
+
+
+      ////////////////////////////////////////////////////////////////////////////////////
+      // .INCLUDE  ACDOC_SI_GL_ACCAS Unified Journal Entry: G/L additional account assignments
+      ////////////////////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_CostCenter'
+      rcntr                                                                                            as CostCenter,
+      @ObjectModel.foreignKey.association: '_ProfitCenter'
+      prctr                                                                                            as ProfitCenter,
+      @ObjectModel.foreignKey.association: '_FunctionalArea'
+      rfarea                                                                                           as FunctionalArea,
+      @ObjectModel.foreignKey.association: '_BusinessArea'
+      rbusa                                                                                            as BusinessArea,
+      @ObjectModel.foreignKey.association: '_Segment'
+      segment                                                                                          as Segment,
+      @ObjectModel.foreignKey.association: '_PartnerCostCenter'
+      scntr                                                                                            as PartnerCostCenter,
+      @ObjectModel.foreignKey.association: '_PartnerProfitCenter'
+      pprctr                                                                                           as PartnerProfitCenter,
+      @ObjectModel.foreignKey.association: '_PartnerFunctionalArea'
+      sfarea                                                                                           as PartnerFunctionalArea,
+      @ObjectModel.foreignKey.association: '_PartnerBusinessArea'
+      sbusa                                                                                            as PartnerBusinessArea,
+      @ObjectModel.foreignKey.association: '_PartnerCompany'
+      rassc                                                                                            as PartnerCompany,
+      psegment                                                                                         as PartnerSegment,
+
+
+      /////////////////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_VALUE_DATA Unified Journal Entry: Value Fields
+      /////////////////////////////////////////////////////////////////////////////////////
+
+      @ObjectModel.foreignKey.association: '_BalanceTransactionCurrency'
+      @Semantics.currencyCode:true
+      rtcur                                                                                            as BalanceTransactionCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'BalanceTransactionCurrency'} }
+      tsl                                                                                              as AmountInBalanceTransacCrcy,
+
+      @ObjectModel.foreignKey.association: '_TransactionCurrency'
+      @Semantics.currencyCode:true
+      rwcur                                                                                            as TransactionCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'TransactionCurrency'} }
+      wsl                                                                                              as AmountInTransactionCurrency,
+
+      @ObjectModel.foreignKey.association: '_CompanyCodeCurrency'
+      @Semantics.currencyCode:true
+      rhcur                                                                                            as CompanyCodeCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'CompanyCodeCurrency'} }
+      hsl                                                                                              as AmountInCompanyCodeCurrency,
+
+      ////////////////////////////////////
+      // NEW
+      @ObjectModel.foreignKey.association: '_GlobalCurrency'
+      @Semantics.currencyCode:true
+      rkcur                                                                                            as GlobalCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      ksl                                                                                              as AmountInGlobalCurrency,
+      
+      // Functional Currency
+      @ObjectModel.foreignKey.association: '_FunctionalCurrency'
+      @Semantics.currencyCode:true
+      rfccur as FunctionalCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FunctionalCurrency'} }
+      fcsl as AmountInFunctionalCurrency,      
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency1'
+      @Semantics.currencyCode:true
+      rocur                                                                                            as FreeDefinedCurrency1,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency1'} }
+      osl                                                                                              as AmountInFreeDefinedCurrency1,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency2'
+      @Semantics.currencyCode:true
+      rvcur                                                                                            as FreeDefinedCurrency2,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency2'} }
+      vsl                                                                                              as AmountInFreeDefinedCurrency2,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency3'
+      @Semantics.currencyCode:true
+      cast( rbcur as fis_curr3 preserving type ) as FreeDefinedCurrency3,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency3'} }
+      bsl                                                                                              as AmountInFreeDefinedCurrency3,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency4'
+      @Semantics.currencyCode:true
+      cast( rccur as fis_curr4 preserving type ) as FreeDefinedCurrency4,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency4'} }
+      csl                                                                                              as AmountInFreeDefinedCurrency4,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency5'
+      @Semantics.currencyCode:true
+      cast( rdcur as fis_curr5 preserving type ) as FreeDefinedCurrency5,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency5'} }
+      dsl                                                                                              as AmountInFreeDefinedCurrency5,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency6'
+      @Semantics.currencyCode:true
+      cast( recur as fis_curr6 preserving type ) as FreeDefinedCurrency6,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency6'} }
+      esl                                                                                              as AmountInFreeDefinedCurrency6,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency7'
+      @Semantics.currencyCode:true
+      rfcur                                                                                            as FreeDefinedCurrency7,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency7'} }
+      fsl                                                                                              as AmountInFreeDefinedCurrency7,
+
+      @ObjectModel.foreignKey.association: '_FreeDefinedCurrency8'
+      @Semantics.currencyCode:true
+      cast( rgcur as fis_curr8 preserving type ) as FreeDefinedCurrency8,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'FreeDefinedCurrency8'} }
+      gsl                                                                                              as AmountInFreeDefinedCurrency8,
+      ////////////////////////////////////
+
+      ////////////////////////////////////
+      // NEW
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      kfsl                                                                                             as FixedAmountInGlobalCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }      
+      cast( kfsl2 as fis_vgcur12_fix2 preserving type ) as GrpValnFixedAmtInGlobCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }      
+      cast( kfsl3 as fis_vgcur12_fix3 preserving type ) as PrftCtrValnFxdAmtInGlobCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'CompanyCodeCurrency'} }
+      hfsl                                                                                             as FixedAmountInCoCodeCrcy,
+      //
+      //      @DefaultAggregation: #SUM
+      //      @Semantics: { amount : {currencyCode: 'CompanyCodeCurrency'} }
+      //      hfsl2                                                                                              as GrpValnFixedAmtInCoCodeCrcy,
+      //
+      //      @DefaultAggregation: #SUM
+      //      @Semantics: { amount : {currencyCode: 'CompanyCodeCurrency'} }
+      //      hfsl3                                                                                              as PrftCtrValnFxdAmtInCoCodeCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      psl                                                                                              as TotalPriceVarcInGlobalCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      cast( psl2 as fis_vpcur12_2 preserving type ) as GrpValnTotPrcVarcInGlobCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      cast( psl3 as fis_vpcur12_3 preserving type ) as PrftCtrValnTotPrcVarcInGlbCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      pfsl                                                                                             as FixedPriceVarcInGlobalCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }      
+      cast( pfsl2 as fis_vpfcur12_2 preserving type ) as GrpValnFixedPrcVarcInGlobCrcy,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GlobalCurrency'} }      
+      cast( pfsl3 as fis_vpfcur12_3 preserving type ) as PrftCtrValnFxdPrcVarcInGlbCrcy,
+      ////////////////////////////////////
+
+
+      @Semantics.currencyCode:true
+      rco_ocur                                                                                         as ControllingObjectCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'ControllingObjectCurrency'} }      
+      cast( co_osl as fis_vco_ocur12 preserving type ) as AmountInObjectCurrency,
+
+      @Semantics.currencyCode:true
+      rgm_ocur                                                                                         as GrantCurrency,
+      @DefaultAggregation: #SUM
+      @Semantics: { amount : {currencyCode: 'GrantCurrency'} }
+      gm_osl                                                                                           as AmountInGrantCurrency,
+
+
+      @ObjectModel.foreignKey.association: '_BaseUnit'
+      @Semantics.unitOfMeasure:true
+      runit                                                                                            as BaseUnit,
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'BaseUnit'} }
+      msl                                                                                              as Quantity,
+
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'BaseUnit'} }
+      cast( mfsl as fis_quan1_12_fix preserving type ) as FixedQuantity,
+
+      @ObjectModel.foreignKey.association: '_CostSourceUnit'
+      @Semantics.unitOfMeasure:true
+      rvunit                                                                                           as CostSourceUnit,
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'CostSourceUnit'} }    
+      cast( vmsl as fis_vquan1_12 preserving type ) as ValuationQuantity, 
+
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'CostSourceUnit'} }      
+      cast( vmfsl as fis_vquan1_12_fix preserving type ) as ValuationFixedQuantity,
+
+      @ObjectModel.foreignKey.association: '_ReferenceQuantityUnit'
+      @Semantics.unitOfMeasure:true
+      rrunit                                                                                           as ReferenceQuantityUnit,
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'ReferenceQuantityUnit'} }
+      rmsl                                                                                             as ReferenceQuantity,
+
+      @ObjectModel.foreignKey.association: '_AdditionalQuantity1Unit'
+      @Semantics.unitOfMeasure:true
+      cast( qunit1 as fis_qunit1 preserving type )  as AdditionalQuantity1Unit,      
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'AdditionalQuantity1Unit'} }
+      cast( quant1 as fis_quan1_l preserving type ) as AdditionalQuantity1,
+
+      @ObjectModel.foreignKey.association: '_AdditionalQuantity2Unit'
+      @Semantics.unitOfMeasure:true
+      cast( qunit2 as fis_qunit2 preserving type )  as AdditionalQuantity2Unit, 
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'AdditionalQuantity2Unit'} }
+      cast( quant2 as fis_quan2_l preserving type ) as AdditionalQuantity2,
+
+      @ObjectModel.foreignKey.association: '_AdditionalQuantity3Unit'
+      @Semantics.unitOfMeasure:true
+      cast( qunit3 as fis_qunit3 preserving type )  as AdditionalQuantity3Unit, 
+      @DefaultAggregation: #SUM
+      @Semantics: { quantity : {unitOfMeasure: 'AdditionalQuantity3Unit'} }
+      cast( quant3 as fis_quan3_l preserving type ) as AdditionalQuantity3,
+
+
+      /////////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_FIX  Unified Journal Entry: Mandatory fields for G/L
+      ////////////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_DebitCreditCode'
+      drcrk                                                                                            as DebitCreditCode,
+      @ObjectModel.foreignKey.association: '_FiscalPeriodForVariant'
+      @Semantics.fiscal.period: true
+      poper                                                                                            as FiscalPeriod,
+      @ObjectModel.foreignKey.association: '_FiscalYearVariant'
+      @Semantics.fiscal.yearVariant: true
+      periv                                                                                            as FiscalYearVariant,
+      @ObjectModel.foreignKey.association: '_FiscalYearPeriodForVariant'
+      @Semantics.fiscal.yearPeriod: true
+      fiscyearper                                                                                      as FiscalYearPeriod,
+      budat                                                                                            as PostingDate,
+      bldat                                                                                            as DocumentDate,
+      @ObjectModel.foreignKey.association: '_AccountingDocumentType'
+      blart                                                                                            as AccountingDocumentType,
+      buzei                                                                                            as AccountingDocumentItem,
+      zuonr                                                                                            as AssignmentReference,
+      @ObjectModel.foreignKey.association: '_AccountingDocumentCategory'
+      bstat                                                                                            as AccountingDocumentCategory,
+      @ObjectModel.foreignKey.association: '_PostingKey'
+      bschl                                                                                            as PostingKey,
+      ktosl                                                                                            as TransactionTypeDetermination,
+      @ObjectModel.foreignKey.association: '_SubLedgerAccLineItemType'
+      slalittype                                                                                       as SubLedgerAcctLineItemType,
+      //      @ObjectModel.foreignKey.association: '_User'
+      usnam                                                                                            as AccountingDocCreatedByUser,
+      cast( timestamp as fis_chng_tstamp preserving type )                                             as LastChangeDateTime,
+      cast( timestamp as fis_crea_tstamp preserving type )                                             as CreationDateTime,
+      -- cast(div(timestamp, 1000000) as FIS_TIMESTAMP) as CreationDate,
+//    cast( cast(substring( cast(timestamp as abap.char(30)) , 1 , 8) as abap.dats(8))  as fis_cpdat ) as CreationDate,
+cast((
+      case timestamp
+         when 0 then '00000000'
+                else  cast( cast(substring( cast(timestamp as abap.char(30)) , 1 , 8) as abap.dats(8))  as fis_cpdat )
+      end
+) as fis_cpdat ) as CreationDate,
+      @ObjectModel.foreignKey.association: '_EliminationProfitCenter'     
+      cast( eprctr as fis_eprctr preserving type ) as EliminationProfitCenter, 
+      rhoart                                                                                           as OriginObjectType,
+      @ObjectModel.foreignKey.association: '_GLAccountType'
+      glaccount_type                                                                                   as GLAccountType,
+      @ObjectModel.foreignKey.association: '_AlternativeGLAccount'
+      lokkt                                                                                            as AlternativeGLAccount,
+      @ObjectModel.foreignKey.association: '_CountryChartOfAccounts'
+      ktop2                                                                                            as CountryChartOfAccounts,
+      cast( xsplitmod as xsplitmod_acd preserving type  ) as ItemIsSplit,
+      
+      
+      /////////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_FINCS   Universal Journal Entry: Fields for Group Reporting
+      ////////////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_ConsolidationUnit'      
+      rbunit                                                                                           as ConsolidationUnit,
+      @ObjectModel.foreignKey.association: '_PartnerConsolidationUnit'  
+      rbuptr                                                                                           as PartnerConsolidationUnit,
+      @ObjectModel.foreignKey.association: '_Company'  
+      rcomp                                                                                            as Company, 
+      @ObjectModel.foreignKey.association: '_ConsolidationChartOfAccounts' 
+      ritclg                                                                                           as ConsolidationChartOfAccounts,
+      @ObjectModel.foreignKey.association: '_CnsldtnFinancialStatementItem' 
+      ritem                                                                                            as CnsldtnFinancialStatementItem,
+      @ObjectModel.foreignKey.association: '_CnsldtnSubitemCategory' 
+      sityp                                                                                            as CnsldtnSubitemCategory,
+      @ObjectModel.foreignKey.association: '_CnsldtnSubitem' 
+      subit                                                                                            as CnsldtnSubitem,      
+
+
+      ///////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_GEN  Unified Journal Entry: Fields for several subledgers
+      //////////////////////////////////////////////////////////////////////////
+      rebzg                                                                                            as InvoiceReference,
+      rebzj                                                                                            as InvoiceReferenceFiscalYear,
+      cast( rebzt as fis_rebzt preserving type ) as FollowOnDocumentType,
+      rebzz                                                                                            as InvoiceItemReference,
+      rbest                                                                                            as ReferencePurchaseOrderCategory,
+//      @ObjectModel.foreignKey.association: '_PurchasingDocument'
+      ebeln                                                                                            as PurchasingDocument,
+//      @ObjectModel.foreignKey.association: '_PurchasingDocumentItem'
+      ebelp                                                                                            as PurchasingDocumentItem,      
+      cast( zekkn as fis_dzekkn preserving type ) as AccountAssignmentNumber,
+      sgtxt                                                                                            as DocumentItemText,
+      //      @ObjectModel.foreignKey.association: '_SalesOrder'
+      //      kdauf                                                                                              as SalesOrder,
+      //      @ObjectModel.foreignKey.association: '_SalesOrderItem'
+      //      kdpos                                                                                              as SalesOrderItem,
+      @ObjectModel.foreignKey.association: '_SalesDocument'
+      cast(kdauf as vbeln_va preserving type)                                                          as SalesDocument,
+      @ObjectModel.foreignKey.association: '_SalesDocumentItem'
+      cast(kdpos as posnr_va preserving type)                                                          as SalesDocumentItem,
+
+      @ObjectModel.foreignKey.association: '_Product'
+      cast (matnr as productnumber)                                                                    as Product,
+      @ObjectModel.foreignKey.association: '_Plant'
+      werks                                                                                            as Plant,
+      @ObjectModel.foreignKey.association: '_Supplier'
+      lifnr                                                                                            as Supplier,
+      @ObjectModel.foreignKey.association: '_Customer'
+      kunnr                                                                                            as Customer,
+      fbuda                                                                                            as ServicesRenderedDate,
+      perop_beg as PerformancePeriodStartDate,
+      perop_end as PerformancePeriodEndDate,
+      @ObjectModel.foreignKey.association: '_ConditionContract'
+      coco_num                                                                                         as ConditionContract,
+      wwert                                                                                            as ExchangeRateDate,
+      /////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_FI  Unified Journal Entry: Fields for FI subledgers
+      /////////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_FinancialAccountType'
+      koart                                                                                            as FinancialAccountType,
+      @ObjectModel.foreignKey.association: '_SpecialGLCode'
+      umskz                                                                                            as SpecialGLCode,
+      //      @ObjectModel.foreignKey.association: '_TaxCode'
+      mwskz                                                                                            as TaxCode,
+      @Analytics.internalName: #LOCAL
+      @ObjectModel.foreignKey.association: '_TaxCountry'
+      tax_country        as  TaxCountry,
+      //      @ObjectModel.foreignKey.association: '_HouseBank'
+      hbkid                                                                                            as HouseBank,
+      //      @ObjectModel.foreignKey.association: '_HouseBankAccount'
+      hktid                                                                                            as HouseBankAccount,
+//      @Semantics.booleanIndicator
+      xopvw                                                                                            as IsOpenItemManaged,
+      augdt                                                                                            as ClearingDate,
+      @ObjectModel.foreignKey.association: '_ClearingAccountingDocument'
+      augbl                                                                                            as ClearingAccountingDocument,
+      auggj                                                                                            as ClearingDocFiscalYear,
+      valut                                                                                            as ValueDate,
+
+
+      /////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_FAA  Unified Journal Entry: Fields for Asset Accounting
+      /////////////////////////////////////////////////////////////////////////
+      afabe                                                                                            as AssetDepreciationArea,
+      @ObjectModel.foreignKey.association: '_MasterFixedAsset'
+      anln1                                                                                            as MasterFixedAsset,
+      @ObjectModel.foreignKey.association: '_FixedAsset'
+      anln2                                                                                            as FixedAsset,
+      bzdat                                                                                            as AssetValueDate,
+      //      @ObjectModel.foreignKey.association: '_AssetTransactionType'
+      anbwa                                                                                            as AssetTransactionType,
+      //      @ObjectModel.foreignKey.association: '_MovementCategory'
+      movcat                                                                                           as AssetAcctTransClassfctn,
+      depr_period                                                                                      as DepreciationFiscalPeriod,
+      @ObjectModel.foreignKey.association: '_GroupMasterFixedAsset'
+      anlgr                                                                                            as GroupMasterFixedAsset,
+      @ObjectModel.foreignKey.association: '_GroupFixedAsset'
+      anlgr2                                                                                           as GroupFixedAsset,
+      anlkl                                                                                            as AssetClass,
+      @ObjectModel.foreignKey.association: '_PartnerMasterFixedAsset'
+      panl1                                                                                            as PartnerMasterFixedAsset,
+      @ObjectModel.foreignKey.association: '_PartnerFixedAsset'
+      panl2                                                                                            as PartnerFixedAsset,
+
+      //////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_ML Unified Journal Entry: Fields for Material Ledger
+      //////////////////////////////////////////////////////////////////////////
+      kalnr                                                                                            as CostEstimate,
+      @ObjectModel.foreignKey.association: '_InventorySpecialStockValnType'
+      cast( kzbws as fis_inventoryspclstockvalntype preserving type ) as InventorySpecialStockValnType,
+      //xobew,
+      @ObjectModel.foreignKey.association: '_InventorySpecialStockType'
+      cast( sobkz as fis_inventoryspecialstocktype preserving type ) as InventorySpecialStockType,
+      @ObjectModel.foreignKey.association: '_InventorySpclStkSalesDocument'      
+      cast( mat_kdauf as fis_mlmat_kdauf preserving type ) as InventorySpclStkSalesDocument, //  as InventorySpecialStockSalesDocument,
+      @ObjectModel.foreignKey.association: '_InventorySpclStkSalesDocItm'
+      cast( mat_kdpos as fis_mlmat_kdpos preserving type ) as InventorySpclStkSalesDocItm, //  as InventorySpecialStockSalesDocumentItem,
+      @ObjectModel.foreignKey.association: '_InvtrySpclStockWBSElmntBasic'
+      cast( mat_pspnr as fis_invspstock_wbsint_no_conv preserving type )                               as InvtrySpclStockWBSElmntIntID,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:   'InvtrySpclStockWBSElmntIntID'
+@VDM.lifecycle.status:    #DEPRECATED
+@VDM.lifecycle.successor: 'InvtrySpclStockWBSElmntIntID'
+      cast( mat_ps_posid as fis_invspstock_wbs_no_conv preserving type )                               as InventorySpclStockWBSElement,
+
+      @ObjectModel.foreignKey.association: '_InventorySpecialStockSupplier'
+      mat_lifnr                                                                                        as InventorySpecialStockSupplier,
+      @ObjectModel.foreignKey.association: '_InventoryValuationType'
+      cast( bwtar as fis_bwtar_d preserving type ) as InventoryValuationType,
+      //      @ObjectModel.foreignKey.association: '_Purreqvaluationarea'
+      bwkey                                                                                            as ValuationArea,
+
+
+      ////////////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_CFIN   Unified Journal Entry: Fields for Central Finance
+      //////////////////////////////////////////////////////////////////////////////
+      cast( bukrs_sender as fis_bukrs_sender preserving type ) as SenderCompanyCode,
+      //@ObjectModel.foreignKey.association: '_SenderGLAccount'
+      racct_sender                                                                                     as SenderGLAccount,
+      cast( accas_sender as fis_accas_sender preserving type ) as SenderAccountAssignment,      
+      cast( accasty_sender as fis_accasty_sender preserving type ) as SenderAccountAssignmentType,
+
+
+      ////////////////////////////////////////////////////////////////////////////
+      //  .INCLUDE  ACDOC_SI_CO  Unified Journal Entry: CO fields
+      ///////////////////////////////////////////////////////////////////////////
+      cast( objnr as fis_objnr preserving type)                                                        as ControllingObject,
+      //      @ObjectModel.foreignKey.association: '_CostOriginGroup'
+      hkgrp                                                                                            as CostOriginGroup,
+      @ObjectModel.foreignKey.association: '_OriginSenderObject'
+      uspob                                                                                            as OriginSenderObject,
+      @ObjectModel.foreignKey.association: '_ControllingDebitCreditCode'      
+      cast( co_belkz as fis_co_belkz preserving type )  as ControllingDebitCreditCode,
+      @ObjectModel.foreignKey.association: '_OriginCtrlgDebitCreditCode'
+      co_beknz                                                                                         as OriginCtrlgDebitCreditCode,      
+      cast( beltp as fis_bp_inout preserving type ) as ControllingObjectDebitType,
+      muvflg                                                                                           as QuantityIsIncomplete,
+      @ObjectModel.foreignKey.association: '_OffsettingAccount'
+      gkont                                                                                            as OffsettingAccount,
+      @ObjectModel.foreignKey.association: '_OffsettingAccountType'
+      cast( gkoar as fis_gkoar preserving type ) as OffsettingAccountType,
+      @ObjectModel.foreignKey.association: '_OffsettingChartOfAccounts'
+      cast(
+      case gkoar
+        when 'D' then '    '
+        when 'K' then '    '
+        else ktopl
+      end
+      as fis_offsettingktopl preserving type )                                                         as OffsettingChartOfAccounts,
+      erlkz                                                                                            as LineItemIsCompleted,
+      pernr                                                                                            as PersonnelNumber,
+      @ObjectModel.foreignKey.association: '_ControllingObjectClass'
+      scope                                                                                            as ControllingObjectClass,
+      @ObjectModel.foreignKey.association: '_PartnerCompanyCode'      
+      cast( pbukrs as fis_pbukrs preserving type ) as PartnerCompanyCode,
+      @ObjectModel.foreignKey.association: '_PartnerControllingObjectClass'
+      pscope                                                                                           as PartnerControllingObjectClass,
+      @ObjectModel.foreignKey.association: '_OriginProfitCenter'
+      uprctr                                                                                           as OriginProfitCenter,
+            
+      @ObjectModel.foreignKey.association: '_OriginOrder'
+      aufnr_org                                                                                        as OriginOrder,
+
+      @ObjectModel.foreignKey.association: '_OriginCostCtrActivityType'
+      ulstar   as OriginCostCtrActivityType,
+      @ObjectModel.foreignKey.association: '_OriginCostCenter'
+      ukostl as OriginCostCenter,
+      UMATNR as OriginProduct,
+      VARC_UACCT as VarianceOriginGLAccount,
+
+      accas                                                                                            as AccountAssignment,
+      accasty                                                                                          as AccountAssignmentType,
+      @ObjectModel.foreignKey.association: '_CostCtrActivityType'
+      lstar                                                                                            as CostCtrActivityType,
+      @ObjectModel.foreignKey.association: '_Order'
+      aufnr                                                                                            as OrderID,
+      @ObjectModel.foreignKey.association: '_OrderCategory'
+      autyp                                                                                            as OrderCategory,
+      @ObjectModel.foreignKey.association: '_WBSElementBasicData'
+      cast( ps_psp_pnr as fis_wbsint_no_conv preserving type )                                         as WBSElementInternalID,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:   'WBSElementInternalID'
+@VDM.lifecycle.status:    #DEPRECATED
+@VDM.lifecycle.successor: 'WBSElementInternalID'
+      cast( ps_posid as fis_wbs_no_conv preserving type )                                              as WBSElement,
+
+      @ObjectModel.foreignKey.association: '_PartnerWBSElementBasicData'
+      cast( pps_psp_pnr as fis_partner_wbsint_no_conv preserving type )                                as PartnerWBSElementInternalID,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:    'PartnerWBSElementInternalID'
+@VDM.lifecycle.status:     #DEPRECATED
+@VDM.lifecycle.successor:  'PartnerWBSElementInternalID'
+      cast( pps_posid as fis_partner_wbs_no_conv preserving type )                                     as PartnerWBSElement,
+
+      @ObjectModel.foreignKey.association: '_ProjectBasicData'
+      cast( ps_prj_pnr as fis_projectint_no_conv preserving type )                                     as ProjectInternalID,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:   'ProjectInternalID'
+@VDM.lifecycle.status:    #DEPRECATED
+@VDM.lifecycle.successor: 'ProjectInternalID'
+      cast( ps_pspid as fis_project_no_conv preserving type  )                                         as Project,
+
+      @ObjectModel.foreignKey.association: '_PartnerProjectBasicData'
+      cast( pps_prj_pnr as fis_part_projectint_no_conv preserving type )                               as PartnerProjectInternalID,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:    'PartnerProjectInternalID'
+@VDM.lifecycle.status:     #DEPRECATED
+@VDM.lifecycle.successor:  'PartnerProjectInternalID'
+      cast( pps_pspid as fis_part_project_no_conv preserving type )                                    as PartnerProject,
+
+      @ObjectModel.foreignKey.association: '_OperatingConcern'
+      erkrs                                                                                            as OperatingConcern,
+      //      @ObjectModel.foreignKey.association: '_ProjectNetwork'
+      nplnr                                                                                            as ProjectNetwork,
+      //      @ObjectModel.foreignKey.association: '_RelatedNetworkActivity'
+      nplnr_vorgn                                                                                      as RelatedNetworkActivity,
+      @ObjectModel.foreignKey.association: '_BusinessProcess'
+      prznr                                                                                            as BusinessProcess,
+      kstrg                                                                                            as CostObject,
+      //      @ObjectModel.foreignKey.association: '_BillableControl'
+      bemot                                                                                            as BillableControl,
+      @ObjectModel.foreignKey.association: '_CostAnalysisResource'
+      rsrce                                                                                            as CostAnalysisResource,      
+      cast( qmnum as fis_qmnum preserving type ) as CustomerServiceNotification,
+
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceDocumentTypeVH',
+                           element: 'ServiceDocumentType' }
+              }]
+      //@ObjectModel.foreignKey.association: '_ServiceDocumentType'
+      service_doc_type                                                                                 as ServiceDocumentType,
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceDocumentVH',
+                           element: 'ServiceDocument' }
+              }]
+      //@ObjectModel.foreignKey.association: '_ServiceDocument'
+      service_doc_id                                                                                   as ServiceDocument,
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceDocumentItemVH',
+                           element: 'ServiceDocumentItem' }
+              }]
+      //@ObjectModel.foreignKey.association: '_ServiceDocumentItem'
+      service_doc_item_id                                                                              as ServiceDocumentItem,
+
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceDocumentTypeVH',
+                           element: 'ServiceDocumentType' }
+              }]
+      //@ObjectModel.foreignKey.association: '_PartnerServiceDocumentType'
+      cast( pservice_doc_type as fis_psrvdoc_type preserving type )  as PartnerServiceDocumentType,
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceDocumentVH',
+                           element: 'ServiceDocument' }
+              }]
+      //@ObjectModel.foreignKey.association: '_PartnerServiceDocument'     
+      cast( pservice_doc_id as fis_psrvdoc_id preserving type ) as PartnerServiceDocument,
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceDocumentItemVH',
+                           element: 'ServiceDocumentItem' }
+              }]
+      //@ObjectModel.foreignKey.association: '_PartnerServiceDocumentItem'
+      cast( pservice_doc_item_id as fis_psrvdoc_item_id preserving type ) as PartnerServiceDocumentItem,
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_ServiceContractTypeStdVH',
+                           element: 'ServiceDocumentType' }
+              }]
+
+      //@ObjectModel.foreignKey.association: '_ServiceContractType'
+      service_contract_type                                                                            as ServiceContractType,
+      @Consumption.valueHelpDefinition: [
+              { entity:  { name:    'I_AcctgServiceContractVH',
+                           element: 'ServiceContract' }
+              }]
+      //@Analytics.internalName: #LOCAL
+      //@ObjectModel.foreignKey.association: '_ServiceContract'
+      service_contract_id                                                                              as ServiceContract,
+      //@ObjectModel.foreignKey.association: '_ServiceContractItem'
+      service_contract_item_id                                                                         as ServiceContractItem,
+
+solution_order_id as BusinessSolutionOrder,
+solution_order_item_id as BusinessSolutionOrderItem,
+
+      @ObjectModel.foreignKey.association: '_ProviderContract'
+      vtkey as ProviderContract,
+      @ObjectModel.foreignKey.association: '_ProviderContractItem'
+      vtpos as ProviderContractItem,
+      
+      ra_contract_id as RevenueAccountingContract,
+      ra_pob_id as PerformanceObligation,         
+
+      //@ObjectModel.foreignKey.association: '_TimeSheetOvertimeCat'
+      overtimecat                                                                                      as TimeSheetOvertimeCategory,
+      paccas                                                                                           as PartnerAccountAssignment,
+      paccasty                                                                                         as PartnerAccountAssignmentType,
+      cast( ps_posid as /cpd/plan_item_id )                                                            as WorkPackage,
+      work_item_id                                                                                     as WorkItem,
+      @ObjectModel.foreignKey.association: '_PartnerCostCtrActivityType'
+      plstar                                                                                           as PartnerCostCtrActivityType,
+      @ObjectModel.foreignKey.association: '_PartnerOrder'
+      paufnr                                                                                           as PartnerOrder,
+      @ObjectModel.foreignKey.association: '_PartnerOrderCategory'
+      pautyp                                                                                           as PartnerOrderCategory,
+      @ObjectModel.foreignKey.association: '_PartnerSalesDocument'
+      pkdauf                                                                                           as PartnerSalesDocument,
+      @ObjectModel.foreignKey.association: '_PartnerSalesDocumentItem'
+      pkdpos                                                                                           as PartnerSalesDocumentItem,      
+      cast( pnplnr as fis_par_npln preserving type ) as PartnerProjectNetwork,
+      //      @ObjectModel.foreignKey.association: '_PartnerProjectNetworkActivity'      
+      cast( pnplnr_vorgn as fis_par_vornr_auf preserving type ) as PartnerProjectNetworkActivity,
+      @ObjectModel.foreignKey.association: '_PartnerBusinessProcess'
+      cast( pprznr as fis_par_prznr preserving type ) as PartnerBusinessProcess,     
+      pkstrg                                                                                           as PartnerCostObject,
+      cast( co_buzei as co_buzei_acd preserving type  ) as ControllingDocumentItem,
+
+      //////////////////////////////////////////////////////////////////////
+      //  .INCLUDE  ACDOC_SI_COPA  Unified Journal Entry: CO-PA fields
+      //////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_BillingDocumentType'
+      fkart                                                                                            as BillingDocumentType,
+      @ObjectModel.foreignKey.association: '_SalesOrganization'
+      vkorg                                                                                            as SalesOrganization,
+      @ObjectModel.foreignKey.association: '_DistributionChannel'
+      vtweg                                                                                            as DistributionChannel,
+      spart                                                                                            as OrganizationDivision,
+      @ObjectModel.foreignKey.association: '_SoldProduct'
+      matnr_copa                                                                                       as SoldProduct,
+      @ObjectModel.foreignKey.association: '_SoldProductGroup'
+      matkl                                                                                            as SoldProductGroup,
+
+      @ObjectModel.foreignKey.association: '_CustomerGroup'
+      kdgrp                                                                                            as CustomerGroup,
+      @Analytics.internalName: #LOCAL
+      @ObjectModel.foreignKey.association: '_CustomerSupplierCountry'      
+      cast( land1 as fis_land1_gp preserving type ) as CustomerSupplierCountry,            
+      cast( brsch as fis_brsch preserving type ) as CustomerSupplierIndustry,
+      @Analytics.internalName: #LOCAL
+      @ObjectModel.foreignKey.association: '_SalesDistrict'
+      bzirk                                                                                            as SalesDistrict,
+      kunre                                                                                            as BillToParty,
+      kunwe                                                                                            as ShipToParty,
+      cast( konzs as fis_konzs preserving type ) as CustomerSupplierCorporateGroup,
+
+
+      //////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_PS  Unified Journal Entry: Fields for Public Sector
+      /////////////////////////////////////////////////////////////////////
+      @ObjectModel.foreignKey.association: '_CashLedgerCompanyCode'
+      re_bukrs                                                                                         as CashLedgerCompanyCode,
+
+      @ObjectModel.foreignKey.association: '_CashLedgerAccount'
+      re_account                                                                                       as CashLedgerAccount,
+
+      @ObjectModel.foreignKey.association: '_FinancialManagementArea'
+      fikrs                                                                                            as FinancialManagementArea,
+
+      @ObjectModel.foreignKey.association: '_FundsCenter'
+      fistl                                                                                            as FundsCenter,
+
+      @ObjectModel.foreignKey.association: '_FundedProgram'
+      measure                                                                                          as FundedProgram,
+
+      @ObjectModel.foreignKey.association: '_Fund'
+      rfund                                                                                            as Fund,
+
+      @ObjectModel.foreignKey.association: '_Grant'
+      rgrant_nbr                                                                                       as GrantID,
+
+      @ObjectModel.foreignKey.association: '_BudgetPeriod'
+      rbudget_pd                                                                                       as BudgetPeriod,
+
+      @ObjectModel.foreignKey.association: '_PartnerFund'
+      sfund                                                                                            as PartnerFund,
+
+      @ObjectModel.foreignKey.association: '_PartnerGrant'
+      sgrant_nbr                                                                                       as PartnerGrant,
+
+      @ObjectModel.foreignKey.association: '_PartnerBudgetPeriod'     
+      cast( sbudget_pd as fis_fm_pbudget_period preserving type ) as PartnerBudgetPeriod,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetAccount'
+      bdgt_account                                                                                     as PubSecBudgetAccount,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetAccountCoCode'
+      bdgt_account_cocode                                                                              as PubSecBudgetAccountCoCode,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetCnsmpnDate'
+      bdgt_cnsmpn_date                                                                                 as PubSecBudgetCnsmpnDate,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetCnsmpnFsclPeriod'
+      bdgt_cnsmpn_period                                                                               as PubSecBudgetCnsmpnFsclPeriod,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetCnsmpnFsclYear'
+      bdgt_cnsmpn_year                                                                                 as PubSecBudgetCnsmpnFsclYear,
+
+      bdgt_relevant                                                                                    as PubSecBudgetIsRelevant,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetCnsmpnType'
+      bdgt_cnsmpn_type                                                                                 as PubSecBudgetCnsmpnType,
+
+      @ObjectModel.foreignKey.association: '_PubSecBudgetCnsmpnAmtType'
+      bdgt_cnsmpn_amount_type                                                                          as PubSecBudgetCnsmpnAmtType,
+
+//      @ObjectModel.foreignKey.association: '_SponsoredProgram'
+      rsponsored_prog as SponsoredProgram,
+
+//      @ObjectModel.foreignKey.association: '_SponsoredClass'
+      rsponsored_class as SponsoredClass,
+      
+      rbdgt_vldty_nbr as GteeMBudgetValidityNumber,      
+
+      ///////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_JVA  Unified Journal Entry: Fields for Joint Venture Accounting
+      ///////////////////////////////////////////////////////////////////////
+      vname                                                                                            as JointVenture,
+      cast( egrup as jv_egroup_cds preserving type )                                                   as JointVentureEquityGroup,
+      cast( recid as jv_recind_cds preserving type )                                                   as JointVentureCostRecoveryCode,
+      cast( vptnr as jv_part_cds preserving type )                                                     as JointVenturePartner,
+      cast( btype as jv_bilind_cds preserving type )                                                   as JointVentureBillingType,
+      cast( etype as jv_etype_cds preserving type )                                                    as JointVentureEquityType,
+      cast( prodper as jv_prodper_cds preserving type )                                                as JointVentureProductionDate,
+      cast( billm as jv_billm_cds preserving type )                                                    as JointVentureBillingDate,
+      cast( pom as jv_pom_cds preserving type )                                                        as JointVentureOperationalDate,
+      cast( cbrunid as jv_cbrunid_cds preserving type )                                                as CutbackRun,
+      cast( jvactivity as jv_activity_cds preserving type )                                            as JointVentureAccountingActivity,
+      cast( pvname as jv_pvname_cds preserving type )                                                  as PartnerVenture,
+      cast( pegrup as jv_pegrup_cds preserving type )                                                  as PartnerEquityGroup,
+      cast( s_recind as jv_srecind_cds preserving type )                                               as SenderCostRecoveryCode,
+      cast( cbracct as jv_cbracct_cds preserving type )                                                as CutbackAccount,
+      cast( cbobjnr as jv_cbobjnr_cds preserving type )                                                as CutbackCostObject,
+
+      ///////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_RE STRU  0 0 Unified Journal Entry: Fields for Real Estate
+      ///////////////////////////////////////////////////////////////////////
+      SWENR as REBusinessEntity,
+      SGENR as RealEstateBuilding,
+      SGRNR as RealEstateProperty,
+      SMENR as RERentalObject,
+      RECNNR as RealEstateContract,
+snksl as REServiceChargeKey,
+sempsl as RESettlementUnitID,      
+cast( dabrz as fis_dabrbez preserving type ) as SettlementReferenceDate,      
+pswenr as REPartnerBusinessEntity,
+psgenr as RealEstatePartnerBuilding,
+psgrnr as RealEstatePartnerProperty,
+psmenr as REPartnerRentalObject,
+precnnr as RealEstatePartnerContract,
+psnksl as REPartnerServiceChargeKey,
+psempsl as REPartnerSettlementUnitID,
+pdabrz as PartnerSettlementReferenceDate,
+
+
+      ///////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_ACR STRU  0 0 Universal Journal Entry: Fields for Accrual object
+      ///////////////////////////////////////////////////////////////////////
+      //   AccrualObject      --(1:N)-->  AccrualSubobject  --(1:N)-->  Accrual(Subobject)Item (this field is not stored in ACDOCA)
+      //   AccrualObjectType                                            AccrualItemType  are the corresponding types
+      //@ObjectModel.foreignKey.association: '_AccrualObjectType'
+      acrobjtype                                                                                       as AccrualObjectType,
+      //@ObjectModel.foreignKey.association: '_AccrualObject'
+      acrobj_id                                                                                        as AccrualObject,
+      //@ObjectModel.foreignKey.association: '_AccrualSubobject'
+      acrsobj_id                                                                                       as AccrualSubobject,
+      //@ObjectModel.foreignKey.association: '_AccrualItemType'
+      acritmtype                                                                                       as AccrualItemType,
+
+      acrvaldat                                                                                        as AccrualValueDate,
+
+
+      ///////////////////////////////////////////////////////////////////////
+      // .INCLUDE ACDOC_SI_VAL STRU  0 0 Universal Journal Entry: Fields for Fin. Valuation Object
+      ///////////////////////////////////////////////////////////////////////      
+      cast( valobjtype as fis_val_obj_type preserving type ) as FinancialValuationObjectType,    
+      cast( valobj_id as fis_val_obj_id preserving type ) as FinancialValuationObject,
+      cast( valsobj_id as fis_val_subobj_id preserving type ) as FinancialValuationSubobject,
+      netdt                                                                                            as NetDueDate,
+      risk_class                                                                                       as CreditRiskClass,
+
+      //////////////////////////////////////////////////////////////////////
+      //  .INCLUDE  ACDOC_SI_LOG  Universal Journal Entry: Fields for Logistics
+      //////////////////////////////////////////////////////////////////////
+
+      arbid                                                                                            as WorkCenterInternalID,
+      vornr                                                                                            as OrderOperation,
+      aufps                                                                                            as OrderItem,
+      paufps                                                                                           as PartnerOrderItem,
+
+      //////////////////////////////////////////////////
+      // .INCLUDE  ACDOC_SI_LOG_ACT:  New Fields  PM  //
+      //////////////////////////////////////////////////
+      //  @ObjectModel.foreignKey.association: '_MaintenanceOrderSubOperation'      // Triangle Condition
+      uvorn                                                                                            as OrderSuboperation,
+      @ObjectModel.foreignKey.association: '_Equipment'
+      equnr                                                                                            as Equipment,
+      @ObjectModel.foreignKey.association: '_FunctionalLocation'
+      tplnr                                                                                            as FunctionalLocation,
+      @ObjectModel.foreignKey.association: '_Assembly'
+      istru                                                                                            as Assembly,
+      @ObjectModel.foreignKey.association: '_MaintenanceActivityType'
+      ilart                                                                                            as MaintenanceActivityType,
+      //@ObjectModel.foreignKey.association: '_MaintOrdPlngDegreeCode'
+      plknz                                                                                            as MaintenanceOrderPlanningCode,
+      //@ObjectModel.foreignKey.association: '_PMNotificationPriorityType'
+      artpr                                                                                            as MaintPriorityType,
+      //@ObjectModel.foreignKey.association: '_PMNotificationPriority'
+      priok                                                                                            as MaintPriority,
+      //@ObjectModel.foreignKey.association: '_SuperiorOrder'
+      maufnr                                                                                           as SuperiorOrder,
+      @ObjectModel.foreignKey.association: '_ProductGroup'
+      cast( matkl_mm  as fis_matkl_mm preserving type )                                                as ProductGroup,
+      planned_parts_work                                                                               as MaintenanceOrderIsPlanned,
+      
+      
+      //////////////////////////////////////////////////////////////////////////
+      // .INCLUDE  ACDOC_SI_TECH:  Universal Journal Entry: Technical Fields  //
+      ////////////////////////////////////////////////////////////////////////// 
+mig_source as JrnlEntryItemMigrationSource,
+      
+
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'CompanyCodeCurrency'} }
+      //   case drcrk  when 'S' then  cast( hsl as fis_dr_hsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_hsl preserving type)
+      //   end as DebitAmountInCoCodeCrcy,
+      //   @DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'CompanyCodeCurrency'} }
+      //   case drcrk  when 'H' then  cast( hsl as fis_cr_hsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_hsl preserving type)
+      //   end as CreditAmountInCoCodeCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'TransactionCurrency'} }
+      //   case drcrk  when 'S' then  cast( wsl as fis_dr_wsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_wsl preserving type)
+      //   end as DebitAmountInTransCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'TransactionCurrency'} }
+      //   case drcrk  when 'H' then  cast( wsl as fis_cr_wsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_wsl preserving type)
+      //   end as CreditAmountInTransCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'BalanceTransactionCurrency'} }
+      //   case drcrk  when 'S' then  cast( tsl as fis_dr_tsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_tsl preserving type)
+      //   end as DebitAmountInBalanceTransCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'BalanceTransactionCurrency'} }
+      //   case drcrk  when 'H' then  cast( tsl as fis_cr_tsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_tsl preserving type)
+      //   end as CreditAmountInBalanceTransCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      //   case drcrk  when 'S' then  cast( ksl as fis_dr_ksl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_ksl preserving type)
+      //   end as DebitAmountInGlobalCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'GlobalCurrency'} }
+      //   case drcrk  when 'H' then  cast( ksl as fis_cr_ksl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_ksl preserving type)
+      //   end as CreditAmountInGlobalCrcy,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency1'} }
+      //   case drcrk  when 'S' then  cast( osl as fis_dr_osl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_osl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy1,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency1'} }
+      //   case drcrk  when 'H' then  cast( osl as fis_cr_osl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_osl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy1,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency2'} }
+      //   case drcrk  when 'S' then  cast( vsl as fis_dr_vsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_vsl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy2,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency2'} }
+      //   case drcrk  when 'H' then  cast( vsl as fis_cr_vsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_vsl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy2,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency3'} }
+      //   case drcrk  when 'S' then  cast( bsl as fis_dr_bsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_bsl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy3,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency3'} }
+      //   case drcrk  when 'H' then  cast( bsl as fis_cr_bsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_bsl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy3,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency4'} }
+      //   case drcrk  when 'S' then  cast( csl as fis_dr_csl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_csl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy4,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency4'} }
+      //   case drcrk  when 'H' then  cast( csl as fis_cr_csl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_csl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy4,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency5'} }
+      //   case drcrk  when 'S' then  cast( dsl as fis_dr_dsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_dsl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy5,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency5'} }
+      //   case drcrk  when 'H' then  cast( dsl as fis_cr_dsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_dsl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy5,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency6'} }
+      //   case drcrk  when 'S' then  cast( esl as fis_dr_esl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_esl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy6,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency6'} }
+      //   case drcrk  when 'H' then  cast( esl as fis_cr_esl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_esl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy6,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency7'} }
+      //   case drcrk  when 'S' then  cast( fsl as fis_dr_fsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_fsl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy7,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency7'} }
+      //   case drcrk  when 'H' then  cast( fsl as fis_cr_fsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_fsl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy7,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency8'} }
+      //   case drcrk  when 'S' then  cast( gsl as fis_dr_gsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_dr_gsl preserving type)
+      //   end as DebitAmountInFreeDfndCrcy8,
+      //
+      //@DefaultAggregation: #SUM
+      //@Semantics: { amount : {currencyCode: 'FreeDefinedCurrency8'} }
+      //   case drcrk  when 'H' then  cast( gsl as fis_cr_gsl preserving type)
+      //                        else  cast( cast( '0' as abap.curr( 23,2))   as fis_cr_gsl preserving type)
+      //   end as CreditAmountInFreeDfndCrcy8,
+      //
+      //
+      //case when ( accasty != 'OR' and accasty != 'OP' and accasty != 'OV' ) and aufnr != ''    then cast( 'X' as fins_xaufnr_stat preserving type)
+      //                                                                                         else cast( ' ' as fins_xaufnr_stat preserving type)
+      //end as IsStatisticalOrder,
+      //
+      //case when ( accasty != 'KL' and accasty != 'KS' ) and rcntr != ''    then cast( 'X' as fins_xkostl_stat preserving type)
+      //                                                                     else cast( ' ' as fins_xkostl_stat preserving type)
+      //end as IsStatisticalCostCenter,
+      //
+      //case when accasty != 'VB' and kdauf != ''   then cast( 'X' as fins_xkdpos_stat preserving type)
+      //                                            else cast( ' ' as fins_xkdpos_stat preserving type)
+      //end as IsStatisticalSalesDocument,
+      //
+      //case when ( accasty != 'PR' ) and ( ps_posid != ' ' and ps_pspid != ' ' ) then cast( 'X' as fins_xps_posid_stat preserving type )
+      //                                                                          else cast( ' ' as fins_xps_posid_stat preserving type )
+      //end as WBSIsStatisticalWBSElement,
+
+
+      ///////////////////////////////////////////////////////////////////////////////
+      // Associations
+      ///////////////////////////////////////////////////////////////////////////////
+
+      _JournalEntry,
+      _CompanyCode,
+      _FiscalYear,
+      _FiscalPeriodForVariant,
+      _LedgerFiscalYearForVariant,
+      _FiscalYearVariant,
+      _FiscalYearPeriodForVariant,
+      _CalendarDate,
+      _FiscalCalendarDate,
+      _ControllingArea,
+      _BalanceTransactionCurrency,
+      _TransactionCurrency,
+      _CompanyCodeCurrency,
+      _GlobalCurrency,
+      _FunctionalCurrency,
+      _FreeDefinedCurrency1,
+      _FreeDefinedCurrency2,
+      _FreeDefinedCurrency3,
+      _FreeDefinedCurrency4,
+      _FreeDefinedCurrency5,
+      _FreeDefinedCurrency6,
+      _FreeDefinedCurrency7,
+      _FreeDefinedCurrency8,
+      _BaseUnit,
+      _CostSourceUnit,
+      _AdditionalQuantity1Unit,
+      _AdditionalQuantity2Unit,
+      _AdditionalQuantity3Unit,
+      _ReferenceQuantityUnit,
+      _Segment,
+      _ProfitCenter,
+      _CostCenter,
+      _CostAnalysisResource,
+
+      _PartnerWBSElementBasicData,
+      _BusinessArea,
+      _FunctionalArea,
+      _GLAccountInChartOfAccounts,
+      _GLAccountInCompanyCode,
+      _ChartOfAccounts,
+      _AccountingDocumentType,
+      _FinancialAccountType,
+      _DebitCreditCode,
+      _Product,
+      _Plant,
+      _Ledger,
+      //      _SourceLedger,
+      //      @UI.hidden: true
+      //      _SourceLedgerText,
+
+      _Customer,
+      _CustomerCompany,
+      _CustomerGroup,
+
+      _Supplier,
+      _SupplierCompany,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:    '_ProductGroup_2'
+@VDM.lifecycle.status:    #DEPRECATED
+@VDM.lifecycle.successor: '_ProductGroup_2'
+_ProductGroup,
+_ProductGroup_2,
+
+@API.element.releaseState: #DEPRECATED
+@API.element.successor:    '_SoldProductGroup_2'
+@VDM.lifecycle.status:    #DEPRECATED
+@VDM.lifecycle.successor: '_SoldProductGroup_2'
+_SoldProductGroup,
+_SoldProductGroup_2,
+
+      //      _SalesOrder,
+      //      _SalesOrderItem,
+      _SalesDocument,
+      _SalesDocumentItem,
+
+      //      _InternalOrder,
+      _Order,
+      _OriginOrder,
+
+      _FinancialTransactionType,
+      _BusinessTransactionCategory,
+      _BusinessTransactionType,
+      //      _ControllingBusTransacType,
+      _ReferenceDocumentType,
+
+      _PartnerCostCenter,
+      _PartnerProfitCenter,
+      _PartnerBusinessArea,
+      _PartnerFunctionalArea,
+      _PartnerCompanyCode,
+      _PartnerSegment,
+
+      _AccountingDocumentCategory,
+
+      _PostingKey,
+      _SubLedgerAccLineItemType,
+      //      _User,
+
+      _EliminationProfitCenter,
+
+      //_ControllingObject,
+
+      _GLAccountType,
+      _OffsettingAccountType,
+      _OffsettingChartOfAccounts,
+      _OffsettingAccount,
+
+      _AlternativeGLAccount,
+      _CountryChartOfAccounts,
+
+//      _PurchasingDocument,
+//      _PurchasingDocumentItem,
+
+      _SpecialGLCode,
+      _TaxCode,
+      _TaxCountry,
+      //      _HouseBank,
+
+      _ClearingAccountingDocument,
+
+      _MasterFixedAsset,
+      _GroupMasterFixedAsset,
+      _PartnerMasterFixedAsset,
+      _FixedAsset,
+      _GroupFixedAsset,
+      _PartnerFixedAsset,
+
+      _InventorySpecialStockValnType,
+      _InventorySpecialStockType,
+      _InventorySpclStkSalesDocument,
+      _InventorySpclStkSalesDocItm,
+      _InvtrySpclStockWBSElmntBasic,     // do not use
+      _InvtrySpclStkWBSElmntBscData,
+      _InventorySpecialStockSupplier,
+      _InventoryValuationType,
+      _ControllingDebitCreditCode,
+      _OriginCtrlgDebitCreditCode,
+      _OriginSenderObject,
+      _ControllingObjectClass,
+      _PartnerControllingObjectClass,
+      _OriginCostCenter,
+      _OriginProfitCenter,
+      _CostCtrActivityType,
+      _OriginCostCtrActivityType,
+      _OrderCategory,
+      //_RelatedNetworkActivity,
+      //_PartnerProjectNetworkActivity,
+
+      _BusinessProcess,
+      _PartnerCostCtrActivityType,
+      _PartnerOrder,
+      _PartnerOrderCategory,
+      _PartnerSalesDocument,
+      _PartnerSalesDocumentItem,
+      _PartnerBusinessProcess,
+      _BillingDocumentType,
+
+      _SalesOrganization,
+      _DistributionChannel,
+      _SoldProduct,
+      //      _MovementCategory,
+      //      _AssetTransactionType,
+      _CostOriginGroup,
+      _CustomerSupplierCountry,
+      _SalesDistrict,
+      _BillToParty,
+      _ShipToParty,
+      //      _HouseBankAccount,
+      //      _LogicalSystem,
+      _OperatingConcern,
+      _PartnerCompany,
+      //      _ProjectNetwork,
+      //      _PurReqValuationArea,
+      _WorkCenter,
+      //      _BillableControl,
+      _ServiceDocumentType,
+      _ServiceDocument,
+      _ServiceDocumentItem,
+      _ServiceContract,
+      _ServiceContractItem,
+      _ServiceContractType,
+      _PartnerServiceDocumentType,
+      _PartnerServiceDocument,
+      _PartnerServiceDocumentItem,
+      _ConditionContract,
+      _Equipment,
+      _FunctionalLocation,
+      _MaintenanceActivityType,
+      //_MaintOrdPlngDegreeCode,
+      //_PMNotificationPriorityType,
+      //_PMNotificationPriority,
+      _MaintenanceOrder,
+      _MaintenanceOrderOperation,
+      _MaintenanceOrderSubOperation,
+      _Assembly,
+      //_SuperiorOrder,
+      _WorkPackage,
+      _WorkPackageWorkItem,
+      //_TimeSheetOvertimeCat,
+      _WBSElementBasicData,
+      _ProjectBasicData,
+      _PartnerProjectBasicData,
+
+      _AccrualObjectType,
+      _AccrualObject,
+      _AccrualSubobject,
+      _AccrualItemType,
+
+      _CreditRiskClass,
+      _FinValuationObjectType,
+
+      _SemTagGLAccount,
+
+      _CashLedgerCompanyCode,
+      _CashLedgerAccount,
+      _FinancialManagementArea,
+      _FundsCenter,
+      _FundedProgram,
+      _Fund,
+      _Grant,
+      _BudgetPeriod,
+      _PartnerFund,
+      _PartnerGrant,
+      _PartnerBudgetPeriod,
+      _PubSecBudgetAccountCoCode,
+      _PubSecBudgetAccount,
+      _PubSecBudgetCnsmpnDate,
+      _PubSecBudgetCnsmpnFsclPeriod,
+      _PubSecBudgetCnsmpnFsclYear,
+      _PubSecBudgetCnsmpnType,
+      _PubSecBudgetCnsmpnAmtType,
+//      _SponsoredProgram,
+//      _SponsoredClass
+      
+      _ConsolidationUnit,
+      _PartnerConsolidationUnit,
+      _Company,
+      _ConsolidationChartOfAccounts,
+      _CnsldtnFinancialStatementItem,
+      _CnsldtnSubitemCategory,
+      _CnsldtnSubitem,     
+
+      _ProviderContract,
+      _ProviderContractItem
+
+      //_Extension  Extensions must be local
+}
